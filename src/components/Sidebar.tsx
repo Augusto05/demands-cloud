@@ -42,29 +42,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isMobileOpen,
   onCloseMobile
 }) => {
-  const [currentUserEmail, setCurrentUserEmail] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    if (supabase) {
-      supabase.auth.getUser().then(({ data }) => {
-        if (data.user) {
-          setCurrentUserEmail(data.user.email || null);
-        }
-      });
-
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        setCurrentUserEmail(session?.user?.email || null);
-      });
-
-      return () => subscription.unsubscribe();
-    }
-  }, []);
+  const currentUsername = localStorage.getItem('demands_current_username') || 'admin';
 
   const handleLogout = async () => {
+    localStorage.removeItem('demands_auth_active');
+    localStorage.removeItem('demands_current_username');
     if (supabase) {
-      await supabase.auth.signOut();
-      window.location.reload();
+      try {
+        await supabase.auth.signOut();
+      } catch (e) {}
     }
+    window.location.reload();
   };
 
   const menuSections = [
@@ -188,24 +176,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-3 border-t border-[#222222] bg-[#101010]">
         <div className={`flex items-center gap-2.5 p-2 rounded-xl bg-[#161616] border border-[#222222] ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-amber-500 text-slate-950 font-extrabold flex items-center justify-center text-xs shadow-md flex-shrink-0 uppercase">
-              {currentUserEmail ? currentUserEmail[0] : 'U'}
+            <div className="w-8 h-8 rounded-xl bg-[#FACC15] text-slate-950 font-black flex items-center justify-center text-xs shadow-md flex-shrink-0 uppercase">
+              {currentUsername ? currentUsername[0] : 'A'}
             </div>
             {!isCollapsed && (
               <div className="text-left leading-tight min-w-0">
-                <span className="text-xs font-extrabold text-white block truncate" title={currentUserEmail || 'Usuário Logado'}>
-                  {currentUserEmail || 'Usuário Logado'}
+                <span className="text-xs font-extrabold text-white block truncate" title={currentUsername}>
+                  {currentUsername}
                 </span>
-                <span className="text-[9px] text-amber-400 block font-bold tracking-wider uppercase">DEMANDS CLOUD</span>
+                <span className="text-[9px] text-[#FACC15] block font-extrabold tracking-wider uppercase">DEMANDS CLOUD</span>
               </div>
             )}
           </div>
 
-          {!isCollapsed && isSupabaseConfigured && currentUserEmail && (
+          {!isCollapsed && (
             <button
               onClick={handleLogout}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-950/40 transition-colors flex-shrink-0"
-              title="Sair da Conta"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-950/40 transition-colors flex-shrink-0 cursor-pointer"
+              title="Sair da Conta (Deslogar)"
             >
               <LogOut className="w-4 h-4" />
             </button>

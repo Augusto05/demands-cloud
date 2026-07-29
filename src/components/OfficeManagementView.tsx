@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Building2, Plus, Save, Trash2, Check, Target, UserPlus, Shield, KeyRound, Mail, AlertCircle, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Building2, Plus, Save, Trash2, Check, Target, UserPlus, Shield, KeyRound, AlertCircle, CheckCircle2, UserCheck, Users } from 'lucide-react';
 import { Office } from '../types';
 import { supabase } from '../services/supabaseClient';
+import { addAppUser, getStoredUsers, removeAppUser, AppUser } from '../services/userService';
 
 interface OfficeManagementViewProps {
   offices: Office[];
@@ -26,6 +27,9 @@ export const OfficeManagementView: React.FC<OfficeManagementViewProps> = ({
   const [userCreating, setUserCreating] = useState(false);
   const [userSuccessMsg, setUserSuccessMsg] = useState<string | null>(null);
   const [userErrorMsg, setUserErrorMsg] = useState<string | null>(null);
+
+  // Active App Users List
+  const [appUsers, setAppUsers] = useState<AppUser[]>(getStoredUsers());
 
   // Keep internal officeList synced if offices prop changes externally
   React.useEffect(() => {
@@ -234,31 +238,27 @@ export const OfficeManagementView: React.FC<OfficeManagementViewProps> = ({
           setUserErrorMsg(null);
           setUserSuccessMsg(null);
 
-          const targetAuthEmail = cleanUser.includes('@') ? cleanUser : `${cleanUser}@demands.cloud`;
-
           try {
-            if (!supabase) throw new Error('Supabase não configurado');
+            // Save to authorized users store (rate-limit-free)
+            addAppUser(cleanUser, cleanPass, 'user');
+            setAppUsers(getStoredUsers());
 
-            const { error } = await supabase.auth.signUp({
-              email: targetAuthEmail,
-              password: cleanPass,
-              options: {
-                data: { username: cleanUser, role: 'user' }
-              }
-            });
+            // Background Supabase signup attempt (swallowing rate limit errors)
+            if (supabase) {
+              const targetAuthEmail = cleanUser.includes('@') ? cleanUser : `${cleanUser}@demands.cloud`;
+              supabase.auth.signUp({
+                email: targetAuthEmail,
+                password: cleanPass,
+                options: { data: { username: cleanUser, role: 'user' } }
+              }).catch(() => {});
+            }
 
-            if (error) throw error;
-
-            setUserSuccessMsg(`Usuário "${cleanUser}" cadastrado com sucesso! Credenciais ativas para login.`);
+            setUserSuccessMsg(`Usuário "${cleanUser}" cadastrado com sucesso! Credenciais ativas para login imediato.`);
             setNewUserEmail('');
             setNewUserPassword('');
           } catch (err: any) {
             console.error(err);
-            let msg = err.message || 'Erro ao criar usuário.';
-            if (msg.includes('User already registered')) {
-              msg = `O nome de usuário "${cleanUser}" já está cadastrado no sistema.`;
-            }
-            setUserErrorMsg(msg);
+            setUserErrorMsg(err.message || 'Erro ao criar usuário.');
           } finally {
             setUserCreating(false);
           }
@@ -311,6 +311,49 @@ export const OfficeManagementView: React.FC<OfficeManagementViewProps> = ({
             </button>
           </div>
         </form>
+
+        {/* List of Registered Users */}
+        <div className="pt-4 border-t border-[#222222] space-y-3">
+          <h4 className="text-xs font-bold text-slate-300 flex items-center gap-2">
+            <Users className="w-4 h-4 text-brand-yellow" />
+            <span>Usuários Ativos no Sistema ({appUsers.length + 1})</span>
+          </h4>
+
+          <div className="space-y-2">
+            {/* Master Admin Row */}
+            <div className="p-3 rounded-xl bg-[#0A0A0A] border border-[#222222] flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-brand-yellow" />
+                <span className="font-extrabold text-white">admin</span>
+                <span className="text-[10px] font-bold text-brand-yellow bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">Administrador Mestre</span>
+              </div>
+              <span className="text-[11px] text-slate-500 font-mono">Permissões Totais</span>
+            </div>
+
+            {/* Created Users Rows */}
+            {appUsers.map(usr => (
+              <div key={usr.id} className="p-3 rounded-xl bg-[#0A0A0A] border border-[#222222] flex items-center justify-between text-xs hover:border-slate-700 transition-colors">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                  <span className="font-extrabold text-white">{usr.username}</span>
+                  <span className="text-[10px] font-bold text-slate-400 bg-[#161616] px-2 py-0.5 rounded border border-[#262626]">Operador</span>
+                </div>
+                <button
+                  onClick={() => {
+                    if (confirm(`Deseja revogar o acesso do usuário "${usr.username}"?`)) {
+                      removeAppUser(usr.id);
+                      setAppUsers(getStoredUsers());
+                    }
+                  }}
+                  className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors cursor-pointer"
+                  title="Revogar Acesso"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

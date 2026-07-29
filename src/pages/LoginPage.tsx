@@ -10,6 +10,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
+import { verifyAppUser } from '../services/userService';
 import { AppLogo } from '../components/AppLogo';
 
 interface LoginPageProps {
@@ -27,11 +28,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!isSupabaseConfigured || !supabase) {
-      setErrorMsg('A chave do Supabase não está configurada no arquivo .env.');
-      return;
-    }
-
     setErrorMsg(null);
 
     const cleanUsername = username.trim().toLowerCase();
@@ -42,64 +38,44 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
       return;
     }
 
-    // Convert username to internal email format (or keep if full email)
-    const authEmail = cleanUsername.includes('@') 
-      ? cleanUsername 
-      : `${cleanUsername}@demands.cloud`;
-
     setLoading(true);
 
     try {
-      // Check for Master Admin credentials (admin / demands_cloud_admin)
-      if (cleanUsername === 'admin' && cleanPassword === 'demands_cloud_admin') {
-        // Attempt Supabase Auth login/signup in background if possible
+      // 1. Check master admin OR local/synced user store credentials first
+      if (verifyAppUser(cleanUsername, cleanPassword)) {
+        localStorage.setItem('demands_current_username', cleanUsername);
+        localStorage.setItem('demands_auth_active', 'true');
+
+        // Background Supabase Auth sync attempt
         if (supabase) {
-          try {
-            const { data } = await supabase.auth.signInWithPassword({
-              email: 'admin@demands.cloud',
-              password: 'demands_cloud_admin'
-            });
-            if (!data.session) {
-              await supabase.auth.signUp({
-                email: 'admin@demands.cloud',
-                password: 'demands_cloud_admin',
-                options: { data: { username: 'admin', role: 'admin' } }
-              });
-            }
-          } catch (e) {
-            // Ignore background Supabase sync errors for master admin
-          }
+          const authEmail = cleanUsername.includes('@') ? cleanUsername : `${cleanUsername}@demands.cloud`;
+          supabase.auth.signInWithPassword({ email: authEmail, password: cleanPassword }).catch(() => {});
         }
 
-        localStorage.setItem('demands_current_username', 'admin');
-        localStorage.setItem('demands_auth_active', 'true');
         onLoginSuccess();
         return;
       }
 
-      // 1. Attempt login via Supabase Auth for standard users
-      let { data, error } = await supabase.auth.signInWithPassword({
-        email: authEmail,
-        password: cleanPassword
-      });
+      // 2. Fallback attempt via Supabase Auth
+      if (supabase && isSupabaseConfigured) {
+        const authEmail = cleanUsername.includes('@') ? cleanUsername : `${cleanUsername}@demands.cloud`;
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: authEmail,
+          password: cleanPassword
+        });
 
-      if (error) throw error;
-
-      if (data?.session) {
-        localStorage.setItem('demands_current_username', cleanUsername);
-        localStorage.setItem('demands_auth_active', 'true');
-        onLoginSuccess();
+        if (!error && data?.session) {
+          localStorage.setItem('demands_current_username', cleanUsername);
+          localStorage.setItem('demands_auth_active', 'true');
+          onLoginSuccess();
+          return;
+        }
       }
+
+      throw new Error('Usuário ou senha incorretos. Solicite suas credenciais ao Administrador.');
     } catch (err: any) {
       console.error('Erro de autenticação:', err);
       let translatedMsg = err.message || 'Ocorreu um erro durante a autenticação.';
-      
-      if (translatedMsg.includes('Invalid login credentials')) {
-        translatedMsg = 'Usuário ou senha incorretos. Solicite suas credenciais ao Administrador.';
-      } else if (translatedMsg.includes('Email not confirmed')) {
-        translatedMsg = 'Não foi possível autenticar. Verifique se as credenciais estão corretas.';
-      }
-
       setErrorMsg(translatedMsg);
     } finally {
       setLoading(false);

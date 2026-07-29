@@ -69,7 +69,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
             <Building2 className="w-7 h-7" />
           </div>
           <h2 className="text-xl font-black text-white tracking-wide pt-1">
-            Demands Cloud
+            Demands
           </h2>
           <p className="text-xs text-slate-400 font-medium">
             {isRegistering ? 'Crie sua conta para acessar seu ambiente' : 'Entre com seu e-mail para acessar seus escritórios'}

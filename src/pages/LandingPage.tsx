@@ -56,7 +56,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin }) =
           {/* Top Pill Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-extrabold shadow-inner">
             <Sparkles className="w-4 h-4 text-amber-400" />
-            <span>PLATAFORMA CORPORATIVA DEMANDS CLOUD v2.5</span>
+            <span>PLATAFORMA CORPORATIVA DEMANDS v2.5</span>
           </div>
 
           {/* Main Headline */}
@@ -95,7 +95,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin }) =
           <div className="pt-8 border-t border-[#1F1F1F] grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl mx-auto text-xs text-slate-400 font-semibold">
             <div className="flex items-center justify-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-amber-400" />
-              <span>Multi-Escritórios (DM9, Aliança, Celebra, M10)</span>
+              <span>Gestão de Multi-Escritórios</span>
             </div>
             <div className="flex items-center justify-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-amber-400" />
@@ -209,7 +209,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin }) =
             onClick={onNavigateToLogin}
             className="px-8 py-3.5 rounded-xl bg-[#FACC15] hover:bg-amber-400 text-slate-950 font-black text-xs transition-all duration-200 inline-flex items-center gap-2 shadow-lg shadow-amber-950/50 cursor-pointer active:scale-95"
           >
-            <span>Fazer Login no Demands Cloud</span>
+            <span>Fazer Login no Demands</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
@@ -218,7 +218,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin }) =
       {/* Footer */}
       <footer className="py-6 px-6 border-t border-[#1A1A1A] text-center text-xs text-slate-500 font-medium">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span>© {new Date().getFullYear()} Demands Cloud - Todos os direitos reservados.</span>
+          <span>© {new Date().getFullYear()} Demands - Todos os direitos reservados.</span>
           <div className="flex items-center gap-2 text-[11px] text-slate-400">
             <Lock className="w-3.5 h-3.5 text-amber-400" />
             <span>Autenticação Segura TLS 1.3 via Supabase Auth</span>

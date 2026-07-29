@@ -262,7 +262,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <Building2 className="w-8 h-8" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-2xl font-black text-white tracking-wide">Bem-vindo ao Demands Cloud!</h2>
+          <h2 className="text-2xl font-black text-white tracking-wide">Bem-vindo ao Demands!</h2>
           <p className="text-xs text-slate-400 font-medium max-w-md mx-auto leading-relaxed">
             Sua plataforma está pronta e 100% limpa. Cadastre seus escritórios corporativos para ativar os relatórios, dashboards e lançamentos diários.
           </p>

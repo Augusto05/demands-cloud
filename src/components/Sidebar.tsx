@@ -184,7 +184,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span className="text-xs font-extrabold text-white block truncate" title={currentUsername}>
                   {currentUsername}
                 </span>
-                <span className="text-[9px] text-[#FACC15] block font-extrabold tracking-wider uppercase">DEMANDS CLOUD</span>
+                <span className="text-[9px] text-[#FACC15] block font-extrabold tracking-wider uppercase">DEMANDS</span>
               </div>
             )}
           </div>

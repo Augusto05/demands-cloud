@@ -88,56 +88,7 @@ export const SYSTEM_MODULES: SystemModuleCategory[] = [
   }
 ];
 
-export const INITIAL_BUGS: BugReport[] = [
-  {
-    id: 'bug-101',
-    title: 'Falha na Validação de Impeditivos C6 durante importação de Mailing',
-    description: 'Ao rodar o validador de impeditivos na tela Admin › Validar Impeditivos C6, requisições paralelas retornam erro 504 Gateway Timeout para lotes maiores que 500 CNPJs.',
-    reproductionSteps: '1. Acessar Admin › Validar Impeditivos C6.\n2. Subir arquivo XLSX com mais de 500 CNPJs.\n3. Clicar em Executar Validação.\n4. Ocorrem falhas de timeout após 30 segundos.',
-    systemModule: 'SISTEMA & ADMIN',
-    systemSection: 'Admin › Validar Impeditivos C6',
-    severity: 'critico',
-    frequency: 'sempre_100',
-    offices: ['DM9', 'Aliança Sul', 'Celebra', 'M10'],
-    images: [],
-    status: 'em_analise',
-    reportedBy: 'Augusto (Admin)',
-    createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000 * 1).toISOString()
-  },
-  {
-    id: 'bug-102',
-    title: 'Divergência de Contas na Perf. Operadores em Horário de Pico',
-    description: 'O relatório de Performance de Operadores do módulo C6 Bank apresenta contagem zerada de chamadas ativas nos intervalos entre 14:00 e 15:30 para o escritório Aliança Sul.',
-    reproductionSteps: '1. Abrir C6 Bank › Gestão C6 › Perf. Operadores.\n2. Selecionar o escritório Aliança Sul.\n3. Comparar histórico de chamadas com o log bruto.',
-    systemModule: 'C6 BANK & API C6',
-    systemSection: 'Gestão C6 › Perf. Operadores',
-    severity: 'alto',
-    frequency: 'duas_cinco',
-    offices: ['Aliança Sul'],
-    images: [],
-    status: 'aberto',
-    reportedBy: 'Equipe de Operações',
-    createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000 * 3).toISOString()
-  },
-  {
-    id: 'bug-103',
-    title: 'Atraso de Sincronismo na API C6 (Histórico API)',
-    description: 'A resposta do endpoint de retorno do Histórico da API C6 apresenta delay de até 15 minutos na atualização do status da proposta.',
-    reproductionSteps: '1. Acessar Integração C6 › Histórico API.\n2. Filtrar por propostas da última hora.\n3. Notar que o status pendente não atualiza sem dar F5.',
-    systemModule: 'C6 BANK & API C6',
-    systemSection: 'Integração C6 › Histórico API',
-    severity: 'medio',
-    frequency: 'intermitente',
-    offices: ['DM9', 'Celebra'],
-    images: [],
-    status: 'em_correcao',
-    reportedBy: 'Dev Team',
-    createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000 * 2).toISOString()
-  }
-];
+export const INITIAL_BUGS: BugReport[] = [];
 
 export async function getStoredBugs(): Promise<BugReport[]> {
   return await getStorageItem<BugReport[]>(STORAGE_KEY, LOCAL_KEY, INITIAL_BUGS);

@@ -67,7 +67,7 @@ export const NotesView: React.FC<NotesViewProps> = ({ offices, onSaveOffices }) 
   // Active selection
   const [selectedFolderId, setSelectedFolderId] = useState<string>('folder-geral');
   const [selectedOfficeTagFilter, setSelectedOfficeTagFilter] = useState<string | null>(null);
-  const [activeNoteId, setActiveNoteId] = useState<string | null>('note-1');
+  const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
 
   // Search
   const [folderSearchTerm, setFolderSearchTerm] = useState('');

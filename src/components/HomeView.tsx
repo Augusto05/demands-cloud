@@ -73,12 +73,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const targetHour = (hourNow >= 9 && hourNow <= 17) ? hourNow : 17;
 
   // Selected office state for quick entry
-  const [selectedOfficeId, setSelectedOfficeId] = useState<string>(offices[0]?.id || 'dm9');
+  const [selectedOfficeId, setSelectedOfficeId] = useState<string>(offices[0]?.id || '');
   const selectedOfficeObj = offices.find(o => o.id === selectedOfficeId) || offices[0];
 
   // Get current hourly store for selected office & date
   const storeForDate = dailyHourly[dateSheetKey] || dailyHourly[todayYYYYMMDD] || {};
-  const currentOfficeRecord = storeForDate[selectedOfficeObj.name] || {
+  const currentOfficeRecord = (selectedOfficeObj && storeForDate[selectedOfficeObj.name]) || {
     hourly: { 9: 0, 10: 0, 11: 0, 12: 0, 13: 0, 14: 0, 15: 0, 16: 0, 17: 0 },
     contas: 0
   };
@@ -88,12 +88,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
   // Sync inputs when office or target hour changes
   useEffect(() => {
+    if (!selectedOfficeObj) return;
     const rec = storeForDate[selectedOfficeObj.name] || {
       hourly: { 9: 0, 10: 0, 11: 0, 12: 0, 13: 0, 14: 0, 15: 0, 16: 0, 17: 0 },
       contas: 0
     };
     setBoletosInput(rec.hourly[targetHour] || 0);
-  }, [selectedOfficeId, targetHour, dailyHourly]);
+  }, [selectedOfficeId, targetHour, dailyHourly, offices]);
 
   // Load Google events and history files on mount
   useEffect(() => {
@@ -253,6 +254,29 @@ export const HomeView: React.FC<HomeViewProps> = ({
     setNoteSavedMsg('Nota salva no Bloco de Notas!');
     setTimeout(() => setNoteSavedMsg(null), 3500);
   };
+
+  if (offices.length === 0) {
+    return (
+      <div className="p-8 rounded-3xl bg-[#101010] border border-[#222222] text-center space-y-6 max-w-xl mx-auto my-12 shadow-2xl animate-fadeIn">
+        <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto shadow-lg shadow-amber-950/30">
+          <Building2 className="w-8 h-8" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-black text-white tracking-wide">Bem-vindo ao Demands Cloud!</h2>
+          <p className="text-xs text-slate-400 font-medium max-w-md mx-auto leading-relaxed">
+            Sua plataforma está pronta e 100% limpa. Cadastre seus escritórios corporativos para ativar os relatórios, dashboards e lançamentos diários.
+          </p>
+        </div>
+        <button
+          onClick={() => onNavigateTab('offices-settings')}
+          className="px-6 py-3.5 rounded-xl bg-[#FACC15] hover:bg-amber-400 text-slate-950 font-extrabold text-xs transition-all inline-flex items-center justify-center gap-2 shadow-lg shadow-amber-950/40 cursor-pointer active:scale-95"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Cadastrar Primeiro Escritório</span>
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-12 animate-fadeIn">

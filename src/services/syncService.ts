@@ -94,6 +94,21 @@ export async function fetchAllStorage(): Promise<Record<string, any>> {
  * Initial Auto-Migration: Uploads ALL existing localStorage keys to Mac disk if not yet present.
  */
 export async function performInitialMigration(): Promise<void> {
+  // Wipe legacy mock data from localStorage if present
+  const mockFlag = localStorage.getItem('demands_mock_cleared_v1');
+  if (!mockFlag) {
+    const rawOffices = localStorage.getItem('demands_offices');
+    if (rawOffices && (rawOffices.includes('DM9') || rawOffices.includes('Celebra'))) {
+      localStorage.removeItem('demands_offices');
+      localStorage.removeItem('demands_base_data');
+      localStorage.removeItem('demands_daily_hourly');
+      localStorage.removeItem('demands_kanban_store_v2');
+      localStorage.removeItem('demands_notes_store');
+      localStorage.removeItem('demands_bug_reports_v1');
+    }
+    localStorage.setItem('demands_mock_cleared_v1', 'true');
+  }
+
   const collections = [
     { key: 'offices', localKey: 'demands_offices' },
     { key: 'base_data', localKey: 'demands_base_data' },
@@ -113,7 +128,6 @@ export async function performInitialMigration(): Promise<void> {
       const rawLocal = localStorage.getItem(item.localKey);
 
       if (!serverHasKey && rawLocal !== null) {
-        // Upload existing local data to Mac disk
         try {
           const parsed = JSON.parse(rawLocal);
           await saveStorageItem(item.key, item.localKey, parsed);

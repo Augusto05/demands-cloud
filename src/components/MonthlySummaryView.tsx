@@ -12,6 +12,20 @@ export const MonthlySummaryView: React.FC<MonthlySummaryViewProps> = ({
   offices,
   baseData
 }) => {
+  if (offices.length === 0) {
+    return (
+      <div className="p-8 rounded-3xl bg-[#101010] border border-[#222222] text-center space-y-4 max-w-xl mx-auto my-12 shadow-2xl animate-fadeIn">
+        <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto">
+          <CalendarDays className="w-7 h-7" />
+        </div>
+        <h2 className="text-xl font-bold text-white">Nenhum Escritório Cadastrado</h2>
+        <p className="text-xs text-slate-400 leading-relaxed font-medium">
+          Cadastre seus escritórios no menu <b>Escritórios & Metas</b> para acompanhar o resumo mensal comparativo.
+        </p>
+      </div>
+    );
+  }
+
   const monthlyData = calculateMonthlySummary(baseData, offices);
 
   return (

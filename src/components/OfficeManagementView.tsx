@@ -19,8 +19,14 @@ export const OfficeManagementView: React.FC<OfficeManagementViewProps> = ({
   const [newDailyMeta, setNewDailyMeta] = useState<number>(200);
   const [newColor, setNewColor] = useState('#3B82F6');
 
+  // Keep internal officeList synced if offices prop changes externally
+  React.useEffect(() => {
+    setOfficeList([...offices]);
+  }, [offices]);
+
   const handleMetaChange = (id: string, meta: number) => {
-    setOfficeList(prev => prev.map(o => o.id === id ? { ...o, dailyMeta: Math.max(1, meta) } : o));
+    const updated = officeList.map(o => o.id === id ? { ...o, dailyMeta: Math.max(1, meta) } : o);
+    setOfficeList(updated);
   };
 
   const handleSave = () => {
@@ -31,21 +37,29 @@ export const OfficeManagementView: React.FC<OfficeManagementViewProps> = ({
 
   const handleAddOffice = () => {
     if (!newOfficeName.trim()) return;
-    const id = newOfficeName.toLowerCase().replace(/\s+/g, '_');
+    const id = newOfficeName.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now();
     const newOff: Office = {
       id,
       name: newOfficeName.trim(),
       dailyMeta: newDailyMeta,
       color: newColor
     };
-    setOfficeList(prev => [...prev, newOff]);
+    const updated = [...officeList, newOff];
+    setOfficeList(updated);
+    onSaveOffices(updated);
     setNewOfficeName('');
     setNewDailyMeta(200);
+    setSavedSuccess(true);
+    setTimeout(() => setSavedSuccess(false), 2500);
   };
 
   const handleDeleteOffice = (id: string) => {
     if (confirm('Deseja realmente remover este escritório?')) {
-      setOfficeList(prev => prev.filter(o => o.id !== id));
+      const updated = officeList.filter(o => o.id !== id);
+      setOfficeList(updated);
+      onSaveOffices(updated);
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 2500);
     }
   };
 

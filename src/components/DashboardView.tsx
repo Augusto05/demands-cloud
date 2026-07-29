@@ -44,6 +44,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   startDate,
   endDate
 }) => {
+  if (offices.length === 0) {
+    return (
+      <div className="p-8 rounded-3xl bg-[#101010] border border-[#222222] text-center space-y-6 max-w-xl mx-auto my-12 shadow-2xl animate-fadeIn">
+        <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto shadow-lg shadow-amber-950/30">
+          <BarChart3 className="w-8 h-8" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-black text-white tracking-wide">Nenhum Escritório Cadastrado</h2>
+          <p className="text-xs text-slate-400 font-medium max-w-md mx-auto leading-relaxed">
+            Cadastre seus escritórios corporativos no menu <b>Escritórios & Metas</b> para acompanhar métricas e projeções no Dashboard.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Filter baseData according to selected office & date range
   const filteredRows = baseData.filter(row => {
     const matchesOffice = selectedOffice === 'all' || row.escritorio.toLowerCase() === selectedOffice.toLowerCase();

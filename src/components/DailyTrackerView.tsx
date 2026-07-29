@@ -78,7 +78,7 @@ export const DailyTrackerView: React.FC<DailyTrackerViewProps> = ({
   onSaveDailyHourly
 }) => {
   const [selectedDate, setSelectedDate] = useState<string>(formatDateToYYYYMMDD(new Date()));
-  const [selectedOfficeId, setSelectedOfficeId] = useState<string>(offices[0]?.id || 'dm9');
+  const [selectedOfficeId, setSelectedOfficeId] = useState<string>(offices[0]?.id || '');
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
 
   const selectedOfficeObj = offices.find(o => o.id === selectedOfficeId) || offices[0];
@@ -87,7 +87,9 @@ export const DailyTrackerView: React.FC<DailyTrackerViewProps> = ({
   const dateSheetName = dateParts.length === 3 ? `${dateParts[2]}.${dateParts[1]}` : selectedDate;
 
   // Resolve office record using normalization & fallback
-  const officeHourlyObj = getOfficeRecordForDate(selectedDate, selectedOfficeObj.name, dailyHourly, baseData);
+  const officeHourlyObj = selectedOfficeObj 
+    ? getOfficeRecordForDate(selectedDate, selectedOfficeObj.name, dailyHourly, baseData)
+    : { hourly: { 9: 0, 10: 0, 11: 0, 12: 0, 13: 0, 14: 0, 15: 0, 16: 0, 17: 0 }, contas: 0 };
 
   const [hourlyRecord, setHourlyRecord] = useState<Record<number, number>>({ ...officeHourlyObj.hourly });
   const [contas, setContas] = useState<number>(officeHourlyObj.contas || 0);
@@ -98,6 +100,7 @@ export const DailyTrackerView: React.FC<DailyTrackerViewProps> = ({
     setSelectedOfficeId(newOfficeId);
     
     const offObj = offices.find(o => o.id === newOfficeId) || offices[0];
+    if (!offObj) return;
     const rec = getOfficeRecordForDate(newDate, offObj.name, dailyHourly, baseData);
 
     setHourlyRecord({ ...rec.hourly });
@@ -110,6 +113,7 @@ export const DailyTrackerView: React.FC<DailyTrackerViewProps> = ({
   };
 
   const handleSave = () => {
+    if (!selectedOfficeObj) return;
     const updatedStore = { ...dailyHourly };
     if (!updatedStore[dateSheetName]) {
       updatedStore[dateSheetName] = {};
@@ -125,9 +129,25 @@ export const DailyTrackerView: React.FC<DailyTrackerViewProps> = ({
     setTimeout(() => setSavedSuccess(false), 2500);
   };
 
-  const metrics = calculateOfficeMetrics(hourlyRecord, contas, selectedOfficeObj.dailyMeta);
+  const metrics = calculateOfficeMetrics(hourlyRecord, contas, selectedOfficeObj?.dailyMeta || 100);
   const hours = [9, 10, 11, 12, 13, 14, 15, 16, 17];
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
+
+  if (offices.length === 0) {
+    return (
+      <div className="p-8 rounded-3xl bg-[#101010] border border-[#222222] text-center space-y-6 max-w-xl mx-auto my-12 shadow-2xl animate-fadeIn">
+        <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto shadow-lg shadow-amber-950/30">
+          <Building2 className="w-8 h-8" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-black text-white tracking-wide">Nenhum Escritório Cadastrado</h2>
+          <p className="text-xs text-slate-400 font-medium max-w-md mx-auto leading-relaxed">
+            Para realizar lançamentos diários de boletos e contas abertas por hora, cadastre seus escritórios no menu <b>Escritórios & Metas</b>.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

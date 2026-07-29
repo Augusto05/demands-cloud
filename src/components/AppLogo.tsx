@@ -2,12 +2,14 @@ import React from 'react';
 
 interface AppLogoProps {
   size?: 'sm' | 'md' | 'lg';
+  showText?: boolean;
   showSubtitle?: boolean;
   className?: string;
 }
 
 export const AppLogo: React.FC<AppLogoProps> = ({ 
   size = 'md', 
+  showText = true,
   showSubtitle = true,
   className = '' 
 }) => {
@@ -45,16 +47,18 @@ export const AppLogo: React.FC<AppLogoProps> = ({
       </div>
 
       {/* Brand Title & Subtitle */}
-      <div className="flex flex-col justify-center min-w-0">
-        <span className={`font-black ${currentSize.title} text-white block leading-none tracking-wider font-sans`}>
-          DEMANDS
-        </span>
-        {showSubtitle && (
-          <span className={`text-slate-400 font-semibold tracking-tight block mt-1 truncate ${currentSize.subtitle}`}>
-            Painel de Escritórios
+      {showText && (
+        <div className="flex flex-col justify-center min-w-0">
+          <span className={`font-black ${currentSize.title} text-white block leading-none tracking-wider font-sans`}>
+            DEMANDS
           </span>
-        )}
-      </div>
+          {showSubtitle && (
+            <span className={`text-slate-400 font-semibold tracking-tight block mt-1 truncate ${currentSize.subtitle}`}>
+              Painel de Escritórios
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 };

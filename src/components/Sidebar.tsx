@@ -107,7 +107,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {!isCollapsed ? (
           <AppLogo size="md" />
         ) : (
-          <AppLogo size="sm" showSubtitle={false} />
+          <AppLogo size="sm" showText={false} showSubtitle={false} />
         )}
 
         <button 
@@ -153,7 +153,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     }`}
                     title={isCollapsed ? item.label : undefined}
                   >
-                    <Icon className={`w-4.5 h-4.5 flex-shrink-0 transition-transform duration-200 ${
+                    <Icon className={`w-4 h-4 min-w-[16px] min-h-[16px] flex-shrink-0 transition-transform duration-200 ${
                       isActive ? 'text-[#FACC15] scale-105' : 'text-slate-400 group-hover:text-slate-200'
                     }`} />
 

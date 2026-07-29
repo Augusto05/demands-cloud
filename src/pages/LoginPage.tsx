@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { 
-  Building2, 
   Mail, 
   KeyRound, 
   LogIn, 
@@ -10,12 +9,9 @@ import {
   Eye, 
   EyeOff, 
   ShieldCheck,
-  Lock,
-  Sparkles,
-  ArrowRight
+  Lock
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
-
 import { AppLogo } from '../components/AppLogo';
 
 interface LoginPageProps {
@@ -44,7 +40,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    // Basic validation
     if (!email.trim() || !password.trim()) {
       setErrorMsg('Preencha seu e-mail e sua senha para continuar.');
       return;
@@ -73,13 +68,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
         if (error) throw error;
 
         if (data.session) {
-          setSuccessMsg('Conta criada com sucesso! Redirecionando...');
-          setTimeout(() => {
-            onLoginSuccess();
-          }, 1000);
+          onLoginSuccess();
         } else {
-          setSuccessMsg('Conta cadastrada com sucesso! Verifique seu e-mail para confirmar ou faça login.');
-          setActiveTab('login');
+          // Attempt immediate login without requiring email validation confirmation
+          const { data: signInData } = await supabase.auth.signInWithPassword({
+            email,
+            password
+          });
+
+          if (signInData?.session) {
+            onLoginSuccess();
+          } else {
+            setSuccessMsg('Conta criada com sucesso! Faça login com suas credenciais para acessar.');
+            setActiveTab('login');
+          }
         }
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -102,7 +104,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
       } else if (translatedMsg.includes('User already registered')) {
         translatedMsg = 'Este e-mail já está cadastrado. Tente fazer o login.';
       } else if (translatedMsg.includes('Email not confirmed')) {
-        translatedMsg = 'E-mail ainda não confirmado. Por favor, verifique sua caixa de entrada.';
+        translatedMsg = 'Não foi possível autenticar. Verifique se a senha está correta ou crie uma nova conta.';
       }
 
       setErrorMsg(translatedMsg);
@@ -112,24 +114,23 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#0A0A0A] text-slate-100 flex items-center justify-center p-4 relative overflow-hidden antialiased selection:bg-amber-500/30 selection:text-amber-200">
-      {/* Background Decorative Glow Elements */}
+    <div className="min-h-screen w-full bg-[#0A0A0A] text-slate-100 flex items-center justify-center p-4 relative overflow-hidden antialiased selection:bg-yellow-500/30 selection:text-yellow-200">
+      {/* Background Decorative Glow Elements in Brand Gold/Yellow */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-amber-500/10 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-amber-600/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute top-10 left-10 w-[350px] h-[350px] bg-amber-400/5 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-yellow-500/5 rounded-full blur-[120px] pointer-events-none" />
 
       {/* Top Left Navigation Back Button */}
       {onBackToLanding && (
         <button
           onClick={onBackToLanding}
-          className="absolute top-6 left-6 z-20 px-4 py-2 rounded-xl bg-[#141414] hover:bg-[#1C1C1C] border border-[#262626] text-xs font-bold text-slate-300 hover:text-white transition-all flex items-center gap-2"
+          className="absolute top-6 left-6 z-20 px-4 py-2 rounded-xl bg-[#141414] hover:bg-[#1C1C1C] border border-[#262626] text-xs font-bold text-slate-300 hover:text-white transition-all flex items-center gap-2 cursor-pointer"
         >
           <span>← Voltar ao Início</span>
         </button>
       )}
 
       {/* Main Container Card */}
-      <div className="w-full max-w-md bg-[#101010]/90 backdrop-blur-xl border border-[#222222] rounded-3xl p-8 shadow-2xl shadow-black/80 space-y-7 relative z-10 animate-fadeIn">
+      <div className="w-full max-w-md bg-[#101010]/95 backdrop-blur-xl border border-[#222222] rounded-3xl p-8 shadow-2xl shadow-black/80 space-y-7 relative z-10 animate-fadeIn">
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center space-y-2">
           <AppLogo size="lg" className="justify-center" />
@@ -144,9 +145,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
               setErrorMsg(null);
               setSuccessMsg(null);
             }}
-            className={`py-2.5 text-xs font-extrabold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 ${
+            className={`py-2.5 text-xs font-black rounded-xl transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
               activeTab === 'login'
-                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-950/40'
+                ? 'bg-[#FACC15] text-slate-950 shadow-md shadow-yellow-950/40'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
@@ -160,9 +161,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
               setErrorMsg(null);
               setSuccessMsg(null);
             }}
-            className={`py-2.5 text-xs font-extrabold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 ${
+            className={`py-2.5 text-xs font-black rounded-xl transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
               activeTab === 'register'
-                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-950/40'
+                ? 'bg-[#FACC15] text-slate-950 shadow-md shadow-yellow-950/40'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
@@ -207,7 +208,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
         <form onSubmit={handleAuth} className="space-y-4">
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-              <Mail className="w-3.5 h-3.5 text-amber-400" />
+              <Mail className="w-3.5 h-3.5 text-[#FACC15]" />
               <span>E-mail Corporativo</span>
             </label>
             <input
@@ -215,14 +216,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
               required
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="seu.email@demands.com"
-              className="w-full px-4 py-3 rounded-xl bg-[#080808] border border-[#222222] text-xs font-medium text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all"
+              placeholder="seu.email@empresa.com"
+              className="w-full px-4 py-3 rounded-xl bg-[#080808] border border-[#222222] text-xs font-medium text-white placeholder:text-slate-600 focus:outline-none focus:border-[#FACC15] focus:ring-1 focus:ring-[#FACC15]/30 transition-all"
             />
           </div>
 
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-              <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+              <KeyRound className="w-3.5 h-3.5 text-[#FACC15]" />
               <span>Senha</span>
             </label>
             <div className="relative">
@@ -233,12 +234,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full px-4 py-3 pr-10 rounded-xl bg-[#080808] border border-[#222222] text-xs font-medium text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all"
+                className="w-full px-4 py-3 pr-10 rounded-xl bg-[#080808] border border-[#222222] text-xs font-medium text-white placeholder:text-slate-600 focus:outline-none focus:border-[#FACC15] focus:ring-1 focus:ring-[#FACC15]/30 transition-all"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-amber-400 transition-colors p-1"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-[#FACC15] transition-colors p-1"
                 title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -249,7 +250,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
           {activeTab === 'register' && (
             <div className="space-y-1.5 animate-fadeIn">
               <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-amber-400" />
+                <Lock className="w-3.5 h-3.5 text-[#FACC15]" />
                 <span>Confirmar Senha</span>
               </label>
               <input
@@ -259,7 +260,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full px-4 py-3 rounded-xl bg-[#080808] border border-[#222222] text-xs font-medium text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all"
+                className="w-full px-4 py-3 rounded-xl bg-[#080808] border border-[#222222] text-xs font-medium text-white placeholder:text-slate-600 focus:outline-none focus:border-[#FACC15] focus:ring-1 focus:ring-[#FACC15]/30 transition-all"
               />
             </div>
           )}
@@ -267,7 +268,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
           <button
             type="submit"
             disabled={loading || !isSupabaseConfigured}
-            className="w-full py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 text-xs font-extrabold transition-all duration-200 flex items-center justify-center gap-2 shadow-xl shadow-amber-950/50 mt-4 cursor-pointer active:scale-95"
+            className="w-full py-3.5 rounded-xl bg-[#FACC15] hover:bg-yellow-400 disabled:opacity-50 text-slate-950 text-xs font-black transition-all duration-200 flex items-center justify-center gap-2 shadow-xl shadow-yellow-950/50 mt-4 cursor-pointer active:scale-95"
           >
             {loading ? (
               <span className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />

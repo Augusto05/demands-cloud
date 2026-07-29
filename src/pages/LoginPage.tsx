@@ -3,13 +3,12 @@ import {
   Mail, 
   KeyRound, 
   LogIn, 
-  UserPlus, 
   AlertCircle, 
   CheckCircle2, 
   Eye, 
   EyeOff, 
   ShieldCheck,
-  Lock
+  UserCheck
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import { AppLogo } from '../components/AppLogo';
@@ -20,16 +19,13 @@ interface LoginPageProps {
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLanding }) => {
-  const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const handleAuth = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!isSupabaseConfigured || !supabase) {
@@ -38,73 +34,33 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
     }
 
     setErrorMsg(null);
-    setSuccessMsg(null);
 
     if (!email.trim() || !password.trim()) {
       setErrorMsg('Preencha seu e-mail e sua senha para continuar.');
       return;
     }
 
-    if (activeTab === 'register') {
-      if (password.length < 6) {
-        setErrorMsg('A senha precisa ter no mínimo 6 caracteres.');
-        return;
-      }
-      if (password !== confirmPassword) {
-        setErrorMsg('As senhas digitadas não coincidem.');
-        return;
-      }
-    }
-
     setLoading(true);
 
     try {
-      if (activeTab === 'register') {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password
-        });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password.trim()
+      });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        if (data.session) {
-          onLoginSuccess();
-        } else {
-          // Attempt immediate login without requiring email validation confirmation
-          const { data: signInData } = await supabase.auth.signInWithPassword({
-            email,
-            password
-          });
-
-          if (signInData?.session) {
-            onLoginSuccess();
-          } else {
-            setSuccessMsg('Conta criada com sucesso! Faça login com suas credenciais para acessar.');
-            setActiveTab('login');
-          }
-        }
-      } else {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
-
-        if (error) throw error;
-
-        if (data.session) {
-          onLoginSuccess();
-        }
+      if (data.session) {
+        onLoginSuccess();
       }
     } catch (err: any) {
       console.error('Erro de autenticação:', err);
       let translatedMsg = err.message || 'Ocorreu um erro durante a autenticação.';
       
       if (translatedMsg.includes('Invalid login credentials')) {
-        translatedMsg = 'E-mail ou senha incorretos. Verifique suas credenciais.';
-      } else if (translatedMsg.includes('User already registered')) {
-        translatedMsg = 'Este e-mail já está cadastrado. Tente fazer o login.';
+        translatedMsg = 'E-mail ou senha incorretos. Solicite suas credenciais ao administrador.';
       } else if (translatedMsg.includes('Email not confirmed')) {
-        translatedMsg = 'Não foi possível autenticar. Verifique se a senha está correta ou crie uma nova conta.';
+        translatedMsg = 'E-mail não verificado ou desativado. Entre em contato com o administrador.';
       }
 
       setErrorMsg(translatedMsg);
@@ -136,40 +92,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
           <AppLogo size="lg" className="justify-center" />
         </div>
 
-        {/* Tab Selection */}
-        <div className="grid grid-cols-2 p-1 bg-[#161616] rounded-2xl border border-[#222222]">
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab('login');
-              setErrorMsg(null);
-              setSuccessMsg(null);
-            }}
-            className={`py-2.5 text-xs font-black rounded-xl transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
-              activeTab === 'login'
-                ? 'bg-[#FACC15] text-slate-950 shadow-md shadow-yellow-950/40'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <LogIn className="w-3.5 h-3.5" />
-            <span>Entrar</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab('register');
-              setErrorMsg(null);
-              setSuccessMsg(null);
-            }}
-            className={`py-2.5 text-xs font-black rounded-xl transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
-              activeTab === 'register'
-                ? 'bg-[#FACC15] text-slate-950 shadow-md shadow-yellow-950/40'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <UserPlus className="w-3.5 h-3.5" />
-            <span>Criar Conta</span>
-          </button>
+        {/* Title Indicator */}
+        <div className="flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-[#161616] border border-[#222222] text-xs font-extrabold text-slate-300">
+          <UserCheck className="w-4 h-4 text-[#FACC15]" />
+          <span>Acesso Restrito ao Sistema</span>
         </div>
 
         {/* Supabase Not Configured Notice */}
@@ -189,7 +115,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
           </div>
         )}
 
-        {/* Feedback Messages */}
+        {/* Feedback Error Message */}
         {errorMsg && (
           <div className="p-3.5 rounded-xl bg-red-950/60 border border-red-500/40 text-red-300 text-xs flex items-center gap-2.5 animate-fadeIn shadow-lg">
             <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
@@ -197,26 +123,19 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
           </div>
         )}
 
-        {successMsg && (
-          <div className="p-3.5 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2.5 animate-fadeIn shadow-lg">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-            <span className="leading-tight">{successMsg}</span>
-          </div>
-        )}
-
-        {/* Form */}
-        <form onSubmit={handleAuth} className="space-y-4">
+        {/* Login Form */}
+        <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
               <Mail className="w-3.5 h-3.5 text-[#FACC15]" />
-              <span>E-mail Corporativo</span>
+              <span>E-mail Corporativo / Usuário</span>
             </label>
             <input
               type="email"
               required
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="seu.email@empresa.com"
+              placeholder="usuario@empresa.com"
               className="w-full px-4 py-3 rounded-xl bg-[#080808] border border-[#222222] text-xs font-medium text-white placeholder:text-slate-600 focus:outline-none focus:border-[#FACC15] focus:ring-1 focus:ring-[#FACC15]/30 transition-all"
             />
           </div>
@@ -239,31 +158,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-[#FACC15] transition-colors p-1"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-[#FACC15] transition-colors p-1 cursor-pointer"
                 title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
-
-          {activeTab === 'register' && (
-            <div className="space-y-1.5 animate-fadeIn">
-              <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-[#FACC15]" />
-                <span>Confirmar Senha</span>
-              </label>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                required
-                minLength={6}
-                value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-4 py-3 rounded-xl bg-[#080808] border border-[#222222] text-xs font-medium text-white placeholder:text-slate-600 focus:outline-none focus:border-[#FACC15] focus:ring-1 focus:ring-[#FACC15]/30 transition-all"
-              />
-            </div>
-          )}
 
           <button
             type="submit"
@@ -272,11 +173,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
           >
             {loading ? (
               <span className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-            ) : activeTab === 'register' ? (
-              <>
-                <UserPlus className="w-4 h-4" />
-                <span>Criar Conta no Supabase</span>
-              </>
             ) : (
               <>
                 <LogIn className="w-4 h-4" />
@@ -287,9 +183,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
         </form>
 
         {/* Security Footer Info */}
-        <div className="pt-4 border-t border-[#222222] text-center flex items-center justify-center gap-2 text-[11px] text-slate-400 font-medium">
-          <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-          <span>Autenticação Segura via Supabase Auth (TLS 1.3)</span>
+        <div className="pt-4 border-t border-[#222222] text-center flex flex-col items-center justify-center gap-1.5 text-[11px] text-slate-400 font-medium">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            <span>Autenticação Restrita via Supabase Auth (TLS 1.3)</span>
+          </div>
+          <span className="text-[10px] text-slate-500">Credenciais fornecidas exclusivamente pelo Administrador</span>
         </div>
       </div>
     </div>

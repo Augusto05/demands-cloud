@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Building2, Plus, Save, Trash2, Check, Target } from 'lucide-react';
+import { Building2, Plus, Save, Trash2, Check, Target, UserPlus, Shield, KeyRound, Mail, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Office } from '../types';
+import { supabase } from '../services/supabaseClient';
 
 interface OfficeManagementViewProps {
   offices: Office[];
@@ -18,6 +19,13 @@ export const OfficeManagementView: React.FC<OfficeManagementViewProps> = ({
   const [newOfficeName, setNewOfficeName] = useState('');
   const [newDailyMeta, setNewDailyMeta] = useState<number>(200);
   const [newColor, setNewColor] = useState('#3B82F6');
+
+  // New Admin User Provisioning Form
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [userCreating, setUserCreating] = useState(false);
+  const [userSuccessMsg, setUserSuccessMsg] = useState<string | null>(null);
+  const [userErrorMsg, setUserErrorMsg] = useState<string | null>(null);
 
   // Keep internal officeList synced if offices prop changes externally
   React.useEffect(() => {
@@ -171,11 +179,130 @@ export const OfficeManagementView: React.FC<OfficeManagementViewProps> = ({
 
         <button
           onClick={handleAddOffice}
-          className="px-4 py-2 rounded-xl bg-brand-yellow text-dark-900 text-xs font-bold hover:bg-yellow-400 transition-all flex items-center gap-2"
+          className="px-4 py-2 rounded-xl bg-brand-yellow text-dark-900 text-xs font-bold hover:bg-yellow-400 transition-all flex items-center gap-2 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Adicionar Escritório</span>
         </button>
+      </div>
+
+      {/* Admin User Provisioning Panel */}
+      <div className="p-6 rounded-2xl bg-dark-800 border border-slate-800 shadow-xl space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-bold text-white flex items-center gap-2">
+            <Shield className="w-5 h-5 text-brand-yellow" />
+            <span>Gestão de Usuários (Painel do Administrador)</span>
+          </h3>
+          <span className="text-[11px] font-bold text-slate-400 bg-[#141414] px-2.5 py-1 rounded-lg border border-[#222222]">
+            Provisionamento de Acessos
+          </span>
+        </div>
+
+        <p className="text-xs text-slate-400">
+          Crie novos usuários do sistema definindo seus e-mails e senhas de acesso. Os usuários cadastrados poderão logar na tela inicial.
+        </p>
+
+        {userErrorMsg && (
+          <div className="p-3 rounded-xl bg-red-950/60 border border-red-500/40 text-red-300 text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+            <span>{userErrorMsg}</span>
+          </div>
+        )}
+
+        {userSuccessMsg && (
+          <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            <span>{userSuccessMsg}</span>
+          </div>
+        )}
+
+        <form onSubmit={async (e) => {
+          e.preventDefault();
+          if (!newUserEmail.trim() || !newUserPassword.trim()) {
+            setUserErrorMsg('Preencha o e-mail e a senha do novo usuário.');
+            return;
+          }
+          if (newUserPassword.length < 6) {
+            setUserErrorMsg('A senha do usuário deve ter no mínimo 6 caracteres.');
+            return;
+          }
+
+          setUserCreating(true);
+          setUserErrorMsg(null);
+          setUserSuccessMsg(null);
+
+          try {
+            if (!supabase) throw new Error('Supabase não configurado');
+
+            const { data, error } = await supabase.auth.signUp({
+              email: newUserEmail.trim(),
+              password: newUserPassword.trim()
+            });
+
+            if (error) throw error;
+
+            setUserSuccessMsg(`Usuário ${newUserEmail.trim()} cadastrado com sucesso! As credenciais de acesso já estão ativas.`);
+            setNewUserEmail('');
+            setNewUserPassword('');
+          } catch (err: any) {
+            console.error(err);
+            let msg = err.message || 'Erro ao criar usuário.';
+            if (msg.includes('User already registered')) {
+              msg = 'Este e-mail de usuário já está cadastrado no sistema.';
+            }
+            setUserErrorMsg(msg);
+          } finally {
+            setUserCreating(false);
+          }
+        }} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+          <div>
+            <label className="text-xs font-semibold text-slate-400 block mb-1 flex items-center gap-1">
+              <Mail className="w-3.5 h-3.5 text-brand-yellow" />
+              <span>E-mail do Novo Usuário</span>
+            </label>
+            <input
+              type="email"
+              required
+              placeholder="usuario@empresa.com"
+              value={newUserEmail}
+              onChange={(e) => setNewUserEmail(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-xl bg-[#0A0A0A] border border-[#222222] text-white text-xs font-bold focus:outline-none focus:border-brand-yellow"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-slate-400 block mb-1 flex items-center gap-1">
+              <KeyRound className="w-3.5 h-3.5 text-brand-yellow" />
+              <span>Senha Inicial de Acesso</span>
+            </label>
+            <input
+              type="password"
+              required
+              minLength={6}
+              placeholder="••••••••"
+              value={newUserPassword}
+              onChange={(e) => setNewUserPassword(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-xl bg-[#0A0A0A] border border-[#222222] text-white text-xs font-bold focus:outline-none focus:border-brand-yellow"
+            />
+          </div>
+
+          <div>
+            <button
+              type="submit"
+              disabled={userCreating}
+              className="w-full px-4 py-2.5 rounded-xl bg-brand-yellow hover:bg-yellow-400 text-slate-950 text-xs font-extrabold transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer active:scale-95 disabled:opacity-50"
+            >
+              {userCreating ? (
+                <span className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <UserPlus className="w-4 h-4" />
+                  <span>Cadastrar Usuário</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

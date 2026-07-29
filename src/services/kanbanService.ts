@@ -216,9 +216,32 @@ export const getStoredKanban = (): KanbanStore => {
 };
 
 import { saveStorageItem } from './syncService';
+import { supabase } from './supabaseClient';
 
 export const saveStoredKanban = (store: KanbanStore): void => {
   saveStorageItem('kanban', STORAGE_KEY, store);
+  const client = supabase;
+  if (client) {
+    client.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        const rows = store.cards.map(card => ({
+          user_id: data.user!.id,
+          card_id: card.id,
+          column_id: card.columnId,
+          title: card.title,
+          description: card.description || '',
+          priority: card.subtitle || 'Media',
+          due_date: card.dueDate || null,
+          office_tag: card.tags && card.tags.length > 0 ? card.tags[0] : null
+        }));
+        if (rows.length > 0) {
+          client.from('kanban_cards').upsert(rows, { onConflict: 'user_id,card_id' }).then(({ error }) => {
+            if (error) console.error('Supabase kanban upsert error:', error);
+          });
+        }
+      }
+    });
+  }
 };
 
 export const formatDueDateBadge = (dueDateStr?: string): { text: string, isOverdue: boolean, isToday: boolean } => {

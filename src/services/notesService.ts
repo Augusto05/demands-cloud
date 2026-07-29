@@ -72,6 +72,23 @@ export const getStoredNotesStoreAsync = async (): Promise<NotesStore> => {
   return await getStorageItem<NotesStore>('notes', STORAGE_KEY, fallback);
 };
 
+import { supabase } from './supabaseClient';
+
 export const saveStoredNotesStore = (store: NotesStore): void => {
   saveStorageItem('notes', STORAGE_KEY, store);
+  const client = supabase;
+  if (client) {
+    client.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        client.from('notes_store').upsert({
+          user_id: data.user!.id,
+          folders: store.folders,
+          notes: store.notes,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' }).then(({ error }) => {
+          if (error) console.error('Supabase notes_store upsert error:', error);
+        });
+      }
+    });
+  }
 };

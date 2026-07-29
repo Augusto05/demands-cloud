@@ -157,6 +157,23 @@ export const getStoredFlowCanvasStore = (): FlowCanvasStore => {
   };
 };
 
+import { supabase } from './supabaseClient';
+
 export const saveStoredFlowCanvasStore = (store: FlowCanvasStore): void => {
   saveStorageItem('flow_canvas', STORAGE_KEY, store);
+  const client = supabase;
+  if (client) {
+    client.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        client.from('flow_canvas').upsert({
+          user_id: data.user!.id,
+          nodes: store.boards,
+          edges: [{ activeBoardId: store.activeBoardId }],
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' }).then(({ error }) => {
+          if (error) console.error('Supabase flow_canvas upsert error:', error);
+        });
+      }
+    });
+  }
 };

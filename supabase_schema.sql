@@ -96,3 +96,47 @@ CREATE POLICY "Users can manage their own notes_store"
   ON public.notes_store FOR ALL
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
+
+-- 6. BUGS REPORT TABLE
+CREATE TABLE IF NOT EXISTS public.bugs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  bug_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  reproduction_steps TEXT,
+  system_module TEXT,
+  system_section TEXT,
+  severity TEXT DEFAULT 'medio',
+  frequency TEXT DEFAULT 'intermitente',
+  offices JSONB DEFAULT '[]'::jsonb,
+  images JSONB DEFAULT '[]'::jsonb,
+  status TEXT DEFAULT 'aberto',
+  reported_by TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.bugs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage their own bugs"
+  ON public.bugs FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+-- 7. FLOW CANVAS TABLE
+CREATE TABLE IF NOT EXISTS public.flow_canvas (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
+  nodes JSONB DEFAULT '[]'::jsonb,
+  edges JSONB DEFAULT '[]'::jsonb,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.flow_canvas ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage their own flow_canvas"
+  ON public.flow_canvas FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+

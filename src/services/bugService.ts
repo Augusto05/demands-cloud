@@ -143,8 +143,38 @@ export async function getStoredBugs(): Promise<BugReport[]> {
   return await getStorageItem<BugReport[]>(STORAGE_KEY, LOCAL_KEY, INITIAL_BUGS);
 }
 
+import { supabase } from './supabaseClient';
+
 export async function saveStoredBugs(bugs: BugReport[]): Promise<void> {
   await saveStorageItem<BugReport[]>(STORAGE_KEY, LOCAL_KEY, bugs);
+  const client = supabase;
+  if (client) {
+    client.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        const rows = bugs.map(b => ({
+          user_id: data.user!.id,
+          bug_id: b.id,
+          title: b.title,
+          description: b.description || '',
+          reproduction_steps: b.reproductionSteps || '',
+          system_module: b.systemModule || '',
+          system_section: b.systemSection || '',
+          severity: b.severity || 'medio',
+          frequency: b.frequency || 'intermitente',
+          offices: b.offices || [],
+          images: b.images || [],
+          status: b.status || 'aberto',
+          reported_by: b.reportedBy || '',
+          updated_at: new Date().toISOString()
+        }));
+        if (rows.length > 0) {
+          client.from('bugs').upsert(rows, { onConflict: 'user_id,bug_id' }).then(({ error }) => {
+            if (error) console.error('Supabase bugs upsert error:', error);
+          });
+        }
+      }
+    });
+  }
 }
 
 export function getSeverityBadge(severity: BugSeverity) {

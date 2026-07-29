@@ -35,6 +35,7 @@ import * as XLSX from 'xlsx';
 
 import { performInitialMigration, fetchAllStorage } from './services/syncService';
 import { supabase, isSupabaseConfigured } from './services/supabaseClient';
+import { LoginPage } from './pages/LoginPage';
 import { AuthModal } from './components/AuthModal';
 
 export const App: React.FC = () => {
@@ -229,12 +230,22 @@ export const App: React.FC = () => {
     );
   }
 
+  // Render Full Screen Dedicated LoginPage if Unauthenticated
+  if (!userSession) {
+    return (
+      <LoginPage 
+        onLoginSuccess={async () => {
+          if (supabase) {
+            const { data } = await supabase.auth.getSession();
+            setUserSession(data.session);
+          }
+        }} 
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-slate-100 flex flex-col md:flex-row antialiased selection:bg-amber-500/30 selection:text-amber-200">
-      {/* Supabase Auth Modal for Unauthenticated Users */}
-      {isSupabaseConfigured && !userSession && (
-        <AuthModal onSuccess={() => {}} />
-      )}
 
       {/* Header Bar Mobile Header & Controls */}
       <header className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#101010]/95 backdrop-blur-md border-b border-[#222222] z-40 px-4 flex items-center justify-between shadow-lg">

@@ -49,6 +49,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           setCurrentUserEmail(data.user.email || null);
         }
       });
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        setCurrentUserEmail(session?.user?.email || null);
+      });
+
+      return () => subscription.unsubscribe();
     }
   }, []);
 
@@ -58,6 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       window.location.reload();
     }
   };
+
   const menuSections = [
     {
       title: 'OPERAÇÕES',

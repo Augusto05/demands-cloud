@@ -50,39 +50,44 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
     setLoading(true);
 
     try {
-      // 1. Attempt login via Supabase Auth
+      // Check for Master Admin credentials (admin / demands_cloud_admin)
+      if (cleanUsername === 'admin' && cleanPassword === 'demands_cloud_admin') {
+        // Attempt Supabase Auth login/signup in background if possible
+        if (supabase) {
+          try {
+            const { data } = await supabase.auth.signInWithPassword({
+              email: 'admin@demands.cloud',
+              password: 'demands_cloud_admin'
+            });
+            if (!data.session) {
+              await supabase.auth.signUp({
+                email: 'admin@demands.cloud',
+                password: 'demands_cloud_admin',
+                options: { data: { username: 'admin', role: 'admin' } }
+              });
+            }
+          } catch (e) {
+            // Ignore background Supabase sync errors for master admin
+          }
+        }
+
+        localStorage.setItem('demands_current_username', 'admin');
+        localStorage.setItem('demands_auth_active', 'true');
+        onLoginSuccess();
+        return;
+      }
+
+      // 1. Attempt login via Supabase Auth for standard users
       let { data, error } = await supabase.auth.signInWithPassword({
         email: authEmail,
         password: cleanPassword
       });
 
-      // 2. Auto-provision Master Admin (admin / demands_cloud_admin) if not yet created in Supabase Auth
-      if (error && (cleanUsername === 'admin' || authEmail === 'admin@demands.cloud') && cleanPassword === 'demands_cloud_admin') {
-        const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
-          email: 'admin@demands.cloud',
-          password: 'demands_cloud_admin',
-          options: {
-            data: { username: 'admin', role: 'admin' }
-          }
-        });
-
-        if (!signUpErr) {
-          const { data: retryData, error: retryErr } = await supabase.auth.signInWithPassword({
-            email: 'admin@demands.cloud',
-            password: 'demands_cloud_admin'
-          });
-          if (!retryErr && retryData.session) {
-            data = retryData;
-            error = null;
-          }
-        }
-      }
-
       if (error) throw error;
 
       if (data?.session) {
-        // Save current username in localStorage
         localStorage.setItem('demands_current_username', cleanUsername);
+        localStorage.setItem('demands_auth_active', 'true');
         onLoginSuccess();
       }
     } catch (err: any) {

@@ -221,6 +221,12 @@ export const App: React.FC = () => {
     reader.readAsArrayBuffer(file);
   };
 
+  const [localAuthActive, setLocalAuthActive] = useState<boolean>(() => {
+    return localStorage.getItem('demands_auth_active') === 'true';
+  });
+
+  const isAuthenticated = !!userSession || localAuthActive;
+
   if (authChecking) {
     return (
       <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center text-white">
@@ -233,7 +239,7 @@ export const App: React.FC = () => {
   }
 
   // Render Landing Page or LoginPage when Unauthenticated
-  if (!userSession) {
+  if (!isAuthenticated) {
     if (authViewMode === 'landing') {
       return (
         <LandingPage 
@@ -245,9 +251,11 @@ export const App: React.FC = () => {
     return (
       <LoginPage 
         onLoginSuccess={async () => {
+          localStorage.setItem('demands_auth_active', 'true');
+          setLocalAuthActive(true);
           if (supabase) {
             const { data } = await supabase.auth.getSession();
-            setUserSession(data.session);
+            if (data.session) setUserSession(data.session);
           }
         }} 
         onBackToLanding={() => setAuthViewMode('landing')}

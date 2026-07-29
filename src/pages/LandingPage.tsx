@@ -34,11 +34,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin }) =
           <AppLogo size="md" />
 
           <div className="flex items-center gap-4">
-            <span className="hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#141414] border border-[#262626] text-xs font-bold text-slate-300">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              Sistemas Operacionais Online
-            </span>
-
             <button
               onClick={onNavigateToLogin}
               className="px-5 py-2.5 rounded-xl bg-[#FACC15] hover:bg-amber-400 text-slate-950 font-black text-xs transition-all duration-200 flex items-center gap-2 shadow-lg shadow-amber-950/40 cursor-pointer active:scale-95"
@@ -53,12 +48,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin }) =
       {/* Hero Section */}
       <section className="py-20 px-6 relative z-10">
         <div className="max-w-5xl mx-auto text-center space-y-8">
-          {/* Top Pill Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-extrabold shadow-inner">
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <span>PLATAFORMA CORPORATIVA DEMANDS v2.5</span>
-          </div>
-
           {/* Main Headline */}
           <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white leading-tight">
             Gestão Unificada de <br className="hidden sm:block" />
@@ -95,7 +84,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin }) =
           <div className="pt-8 border-t border-[#1F1F1F] grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl mx-auto text-xs text-slate-400 font-semibold">
             <div className="flex items-center justify-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-amber-400" />
-              <span>Gestão de Multi-Escritórios</span>
+              <span>Multi-Escritórios</span>
             </div>
             <div className="flex items-center justify-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-amber-400" />

@@ -199,7 +199,7 @@ export const OfficeManagementView: React.FC<OfficeManagementViewProps> = ({
         </div>
 
         <p className="text-xs text-slate-400">
-          Crie novos usuários do sistema definindo seus e-mails e senhas de acesso. Os usuários cadastrados poderão logar na tela inicial.
+          Crie novos usuários do sistema definindo seus nomes de usuário (usernames) e senhas de acesso. Os usuários cadastrados poderão logar na tela inicial.
         </p>
 
         {userErrorMsg && (
@@ -218,11 +218,14 @@ export const OfficeManagementView: React.FC<OfficeManagementViewProps> = ({
 
         <form onSubmit={async (e) => {
           e.preventDefault();
-          if (!newUserEmail.trim() || !newUserPassword.trim()) {
-            setUserErrorMsg('Preencha o e-mail e a senha do novo usuário.');
+          const cleanUser = newUserEmail.trim().toLowerCase();
+          const cleanPass = newUserPassword.trim();
+
+          if (!cleanUser || !cleanPass) {
+            setUserErrorMsg('Preencha o nome de usuário e a senha.');
             return;
           }
-          if (newUserPassword.length < 6) {
+          if (cleanPass.length < 6) {
             setUserErrorMsg('A senha do usuário deve ter no mínimo 6 caracteres.');
             return;
           }
@@ -231,24 +234,29 @@ export const OfficeManagementView: React.FC<OfficeManagementViewProps> = ({
           setUserErrorMsg(null);
           setUserSuccessMsg(null);
 
+          const targetAuthEmail = cleanUser.includes('@') ? cleanUser : `${cleanUser}@demands.cloud`;
+
           try {
             if (!supabase) throw new Error('Supabase não configurado');
 
-            const { data, error } = await supabase.auth.signUp({
-              email: newUserEmail.trim(),
-              password: newUserPassword.trim()
+            const { error } = await supabase.auth.signUp({
+              email: targetAuthEmail,
+              password: cleanPass,
+              options: {
+                data: { username: cleanUser, role: 'user' }
+              }
             });
 
             if (error) throw error;
 
-            setUserSuccessMsg(`Usuário ${newUserEmail.trim()} cadastrado com sucesso! As credenciais de acesso já estão ativas.`);
+            setUserSuccessMsg(`Usuário "${cleanUser}" cadastrado com sucesso! Credenciais ativas para login.`);
             setNewUserEmail('');
             setNewUserPassword('');
           } catch (err: any) {
             console.error(err);
             let msg = err.message || 'Erro ao criar usuário.';
             if (msg.includes('User already registered')) {
-              msg = 'Este e-mail de usuário já está cadastrado no sistema.';
+              msg = `O nome de usuário "${cleanUser}" já está cadastrado no sistema.`;
             }
             setUserErrorMsg(msg);
           } finally {
@@ -257,13 +265,13 @@ export const OfficeManagementView: React.FC<OfficeManagementViewProps> = ({
         }} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
           <div>
             <label className="text-xs font-semibold text-slate-400 block mb-1 flex items-center gap-1">
-              <Mail className="w-3.5 h-3.5 text-brand-yellow" />
-              <span>E-mail do Novo Usuário</span>
+              <UserPlus className="w-3.5 h-3.5 text-brand-yellow" />
+              <span>Nome de Usuário (Username)</span>
             </label>
             <input
-              type="email"
+              type="text"
               required
-              placeholder="usuario@empresa.com"
+              placeholder="Ex: joao ou maria"
               value={newUserEmail}
               onChange={(e) => setNewUserEmail(e.target.value)}
               className="w-full px-3 py-2.5 rounded-xl bg-[#0A0A0A] border border-[#222222] text-white text-xs font-bold focus:outline-none focus:border-brand-yellow"

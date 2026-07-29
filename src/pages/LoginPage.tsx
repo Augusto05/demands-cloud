@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { 
-  Mail, 
+  User, 
   KeyRound, 
   LogIn, 
   AlertCircle, 
-  CheckCircle2, 
   Eye, 
   EyeOff, 
   ShieldCheck,
@@ -19,7 +18,7 @@ interface LoginPageProps {
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLanding }) => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -35,22 +34,55 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
 
     setErrorMsg(null);
 
-    if (!email.trim() || !password.trim()) {
-      setErrorMsg('Preencha seu e-mail e sua senha para continuar.');
+    const cleanUsername = username.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
+    if (!cleanUsername || !cleanPassword) {
+      setErrorMsg('Preencha seu nome de usuário e sua senha para continuar.');
       return;
     }
+
+    // Convert username to internal email format (or keep if full email)
+    const authEmail = cleanUsername.includes('@') 
+      ? cleanUsername 
+      : `${cleanUsername}@demands.cloud`;
 
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password.trim()
+      // 1. Attempt login via Supabase Auth
+      let { data, error } = await supabase.auth.signInWithPassword({
+        email: authEmail,
+        password: cleanPassword
       });
+
+      // 2. Auto-provision Master Admin (admin / demands_cloud_admin) if not yet created in Supabase Auth
+      if (error && (cleanUsername === 'admin' || authEmail === 'admin@demands.cloud') && cleanPassword === 'demands_cloud_admin') {
+        const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
+          email: 'admin@demands.cloud',
+          password: 'demands_cloud_admin',
+          options: {
+            data: { username: 'admin', role: 'admin' }
+          }
+        });
+
+        if (!signUpErr) {
+          const { data: retryData, error: retryErr } = await supabase.auth.signInWithPassword({
+            email: 'admin@demands.cloud',
+            password: 'demands_cloud_admin'
+          });
+          if (!retryErr && retryData.session) {
+            data = retryData;
+            error = null;
+          }
+        }
+      }
 
       if (error) throw error;
 
-      if (data.session) {
+      if (data?.session) {
+        // Save current username in localStorage
+        localStorage.setItem('demands_current_username', cleanUsername);
         onLoginSuccess();
       }
     } catch (err: any) {
@@ -58,9 +90,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
       let translatedMsg = err.message || 'Ocorreu um erro durante a autenticação.';
       
       if (translatedMsg.includes('Invalid login credentials')) {
-        translatedMsg = 'E-mail ou senha incorretos. Solicite suas credenciais ao administrador.';
+        translatedMsg = 'Usuário ou senha incorretos. Solicite suas credenciais ao Administrador.';
       } else if (translatedMsg.includes('Email not confirmed')) {
-        translatedMsg = 'E-mail não verificado ou desativado. Entre em contato com o administrador.';
+        translatedMsg = 'Não foi possível autenticar. Verifique se as credenciais estão corretas.';
       }
 
       setErrorMsg(translatedMsg);
@@ -127,15 +159,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-              <Mail className="w-3.5 h-3.5 text-[#FACC15]" />
-              <span>E-mail Corporativo / Usuário</span>
+              <User className="w-3.5 h-3.5 text-[#FACC15]" />
+              <span>Nome de Usuário (Username)</span>
             </label>
             <input
-              type="email"
+              type="text"
               required
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="usuario@empresa.com"
+              autoCapitalize="none"
+              autoCorrect="off"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              placeholder="Ex: admin ou joao"
               className="w-full px-4 py-3 rounded-xl bg-[#080808] border border-[#222222] text-xs font-medium text-white placeholder:text-slate-600 focus:outline-none focus:border-[#FACC15] focus:ring-1 focus:ring-[#FACC15]/30 transition-all"
             />
           </div>
@@ -143,7 +177,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
               <KeyRound className="w-3.5 h-3.5 text-[#FACC15]" />
-              <span>Senha</span>
+              <span>Senha de Acesso</span>
             </label>
             <div className="relative">
               <input
@@ -186,9 +220,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
         <div className="pt-4 border-t border-[#222222] text-center flex flex-col items-center justify-center gap-1.5 text-[11px] text-slate-400 font-medium">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-            <span>Autenticação Restrita via Supabase Auth (TLS 1.3)</span>
+            <span>Autenticação Restrita por Usuário (TLS 1.3)</span>
           </div>
-          <span className="text-[10px] text-slate-500">Credenciais fornecidas exclusivamente pelo Administrador</span>
+          <span className="text-[10px] text-slate-500">Credenciais fornecidas pelo Administrador (`admin`)</span>
         </div>
       </div>
     </div>

@@ -1,7 +1,6 @@
 -- ========================================================
 -- DEMANDS CLOUD - SUPABASE DATABASE SCHEMA (MULTI-TENANT)
 -- RLS (Row Level Security) enabled on all tables
--- Execute este script no SQL Editor do seu projeto Supabase
 -- ========================================================
 
 -- 1. OFFICES TABLE
@@ -18,6 +17,7 @@ CREATE TABLE IF NOT EXISTS public.offices (
 
 ALTER TABLE public.offices ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can manage their own offices" ON public.offices;
 CREATE POLICY "Users can manage their own offices"
   ON public.offices FOR ALL
   USING (auth.uid() = user_id)
@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS public.base_data (
 
 ALTER TABLE public.base_data ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can manage their own base_data" ON public.base_data;
 CREATE POLICY "Users can manage their own base_data"
   ON public.base_data FOR ALL
   USING (auth.uid() = user_id)
@@ -55,6 +56,7 @@ CREATE TABLE IF NOT EXISTS public.daily_hourly (
 
 ALTER TABLE public.daily_hourly ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can manage their own daily_hourly" ON public.daily_hourly;
 CREATE POLICY "Users can manage their own daily_hourly"
   ON public.daily_hourly FOR ALL
   USING (auth.uid() = user_id)
@@ -76,6 +78,7 @@ CREATE TABLE IF NOT EXISTS public.kanban_cards (
 
 ALTER TABLE public.kanban_cards ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can manage their own kanban_cards" ON public.kanban_cards;
 CREATE POLICY "Users can manage their own kanban_cards"
   ON public.kanban_cards FOR ALL
   USING (auth.uid() = user_id)
@@ -92,6 +95,7 @@ CREATE TABLE IF NOT EXISTS public.notes_store (
 
 ALTER TABLE public.notes_store ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can manage their own notes_store" ON public.notes_store;
 CREATE POLICY "Users can manage their own notes_store"
   ON public.notes_store FOR ALL
   USING (auth.uid() = user_id)
@@ -119,6 +123,7 @@ CREATE TABLE IF NOT EXISTS public.bugs (
 
 ALTER TABLE public.bugs ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can manage their own bugs" ON public.bugs;
 CREATE POLICY "Users can manage their own bugs"
   ON public.bugs FOR ALL
   USING (auth.uid() = user_id)
@@ -135,8 +140,8 @@ CREATE TABLE IF NOT EXISTS public.flow_canvas (
 
 ALTER TABLE public.flow_canvas ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can manage their own flow_canvas" ON public.flow_canvas;
 CREATE POLICY "Users can manage their own flow_canvas"
   ON public.flow_canvas FOR ALL
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
-

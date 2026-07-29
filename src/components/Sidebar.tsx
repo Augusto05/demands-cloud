@@ -104,10 +104,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className={`h-20 px-4 flex items-center border-b border-[#1F1F1F] ${
         isCollapsed ? 'justify-center' : 'justify-between'
       }`}>
-        {!isCollapsed ? (
+        {!isCollapsed && (
           <AppLogo size="md" />
-        ) : (
-          <AppLogo size="sm" showText={false} showSubtitle={false} />
         )}
 
         <button 

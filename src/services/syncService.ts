@@ -95,18 +95,17 @@ export async function fetchAllStorage(): Promise<Record<string, any>> {
  */
 export async function performInitialMigration(): Promise<void> {
   // Wipe legacy mock data from localStorage if present
-  const mockFlag = localStorage.getItem('demands_mock_cleared_v1');
+  const mockFlag = localStorage.getItem('demands_mock_cleared_v2');
   if (!mockFlag) {
-    const rawOffices = localStorage.getItem('demands_offices');
-    if (rawOffices && (rawOffices.includes('DM9') || rawOffices.includes('Celebra'))) {
-      localStorage.removeItem('demands_offices');
-      localStorage.removeItem('demands_base_data');
-      localStorage.removeItem('demands_daily_hourly');
-      localStorage.removeItem('demands_kanban_store_v2');
-      localStorage.removeItem('demands_notes_store');
-      localStorage.removeItem('demands_bug_reports_v1');
-    }
-    localStorage.setItem('demands_mock_cleared_v1', 'true');
+    localStorage.removeItem('demands_offices');
+    localStorage.removeItem('demands_base_data');
+    localStorage.removeItem('demands_daily_hourly');
+    localStorage.removeItem('demands_kanban_store');
+    localStorage.removeItem('demands_kanban_store_v2');
+    localStorage.removeItem('demands_notes_store');
+    localStorage.removeItem('demands_flow_canvas_store');
+    localStorage.removeItem('demands_bug_reports_v1');
+    localStorage.setItem('demands_mock_cleared_v2', 'true');
   }
 
   const collections = [

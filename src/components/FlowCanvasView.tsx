@@ -315,15 +315,12 @@ export const FlowCanvasView: React.FC = () => {
   };
 
   const handleDeleteBoard = () => {
-    if (store.boards.length <= 1) {
-      alert('Você deve manter pelo menos um Quadro de Análise ativo.');
-      return;
-    }
+    if (!activeBoard) return;
     if (confirm(`Deseja realmente excluir o quadro "${activeBoard.name}"?`)) {
       const filtered = store.boards.filter(b => b.id !== activeBoard.id);
       const newStore = {
         boards: filtered,
-        activeBoardId: filtered[0].id
+        activeBoardId: filtered.length > 0 ? filtered[0].id : ''
       };
       setStore(newStore);
       saveStoredFlowCanvasStore(newStore);
@@ -338,6 +335,29 @@ export const FlowCanvasView: React.FC = () => {
     saveStoredFlowCanvasStore(newStore);
     setIsRenamingBoard(false);
   };
+
+  if (store.boards.length === 0) {
+    return (
+      <div className="p-8 rounded-3xl bg-[#101010] border border-[#222222] text-center space-y-6 max-w-xl mx-auto my-12 shadow-2xl animate-fadeIn">
+        <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mx-auto shadow-lg shadow-cyan-950/30">
+          <Workflow className="w-8 h-8" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-black text-white tracking-wide">Fluxos de Análise Limpos</h2>
+          <p className="text-xs text-slate-400 font-medium max-w-md mx-auto leading-relaxed">
+            Seu ambiente de diagramação de fluxos está 100% limpo. Crie seu primeiro quadro de análise operacional para mapear conversões.
+          </p>
+        </div>
+        <button
+          onClick={handleCreateBoard}
+          className="px-6 py-3.5 rounded-xl bg-brand-yellow hover:bg-yellow-400 text-slate-950 font-extrabold text-xs transition-all inline-flex items-center justify-center gap-2 shadow-lg shadow-amber-950/40 cursor-pointer active:scale-95"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Criar Primeiro Quadro de Análise</span>
+        </button>
+      </div>
+    );
+  }
 
   const canvasContent = (
     <div className={`flex flex-col bg-[#050505] text-white transition-all overflow-hidden ${

@@ -1,6 +1,6 @@
 import { KanbanStore, KanbanCard, KanbanColumn, KanbanTag } from '../types';
 
-const STORAGE_KEY = 'demands_kanban_store';
+const STORAGE_KEY = 'demands_kanban_store_v2';
 
 export const INITIAL_KANBAN_TAGS: KanbanTag[] = [];
 

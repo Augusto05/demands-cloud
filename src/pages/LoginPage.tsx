@@ -16,11 +16,14 @@ import {
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 
+import { AppLogo } from '../components/AppLogo';
+
 interface LoginPageProps {
   onLoginSuccess: () => void;
+  onBackToLanding?: () => void;
 }
 
-export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
+export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLanding }) => {
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -115,24 +118,21 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-amber-600/5 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute top-10 left-10 w-[350px] h-[350px] bg-amber-400/5 rounded-full blur-[100px] pointer-events-none" />
 
+      {/* Top Left Navigation Back Button */}
+      {onBackToLanding && (
+        <button
+          onClick={onBackToLanding}
+          className="absolute top-6 left-6 z-20 px-4 py-2 rounded-xl bg-[#141414] hover:bg-[#1C1C1C] border border-[#262626] text-xs font-bold text-slate-300 hover:text-white transition-all flex items-center gap-2"
+        >
+          <span>← Voltar ao Início</span>
+        </button>
+      )}
+
       {/* Main Container Card */}
       <div className="w-full max-w-md bg-[#101010]/90 backdrop-blur-xl border border-[#222222] rounded-3xl p-8 shadow-2xl shadow-black/80 space-y-7 relative z-10 animate-fadeIn">
         {/* Brand Header */}
-        <div className="text-center space-y-3">
-          <div className="w-16 h-16 rounded-2xl bg-[#161616] border border-amber-500/40 flex items-center justify-center text-amber-400 mx-auto shadow-xl shadow-amber-950/40 transform hover:scale-105 transition-transform duration-300">
-            <svg className="w-8 h-8 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3.5" y="3.5" width="17" height="17" rx="4" stroke="currentColor" strokeWidth="2" />
-              <path d="M8.5 12.5L11 15L15.5 9" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-          <div>
-            <h1 className="text-2xl font-black text-white tracking-wider flex items-center justify-center gap-2">
-              DEMANDS <span className="text-amber-400 text-xs font-bold px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30">CLOUD</span>
-            </h1>
-            <p className="text-xs text-slate-400 font-medium mt-1">
-              Painel Corporativo de Gestão de Escritórios & Operações
-            </p>
-          </div>
+        <div className="flex flex-col items-center text-center space-y-2">
+          <AppLogo size="lg" className="justify-center" />
         </div>
 
         {/* Tab Selection */}

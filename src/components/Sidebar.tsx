@@ -32,6 +32,8 @@ interface SidebarProps {
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import { LogOut } from 'lucide-react';
 
+import { AppLogo } from './AppLogo';
+
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   setActiveTab,
@@ -105,33 +107,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   return (
-    <aside className={`fixed top-0 left-0 h-screen bg-[#101010] border-r border-[#222222] transition-all duration-300 ease-in-out z-50 flex flex-col ${
+    <aside className={`fixed top-0 left-0 h-screen bg-[#0D0D0D] border-r border-[#1F1F1F] transition-all duration-300 ease-in-out z-50 flex flex-col ${
       isCollapsed ? 'w-20' : 'w-64'
     } ${
       isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
     }`}>
       {/* Brand Header */}
-      <div className={`h-16 px-4 flex items-center border-b border-[#222222] ${
+      <div className={`h-20 px-4 flex items-center border-b border-[#1F1F1F] ${
         isCollapsed ? 'justify-center' : 'justify-between'
       }`}>
-        {!isCollapsed && (
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-[38px] h-[38px] rounded-xl bg-[#1C1C1C] border border-brand-yellow/30 flex items-center justify-center text-brand-yellow flex-shrink-0 shadow-md">
-              <svg className="w-5 h-5 text-brand-yellow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3.5" y="3.5" width="17" height="17" rx="4" stroke="currentColor" strokeWidth="2" />
-                <path d="M8.5 12.5L11 15L15.5 9" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-            <div className="truncate flex flex-col justify-center">
-              <span className="font-black text-xl tracking-wider text-white block leading-none truncate">DEMANDS</span>
-              <span className="text-[10px] text-slate-400 font-semibold tracking-tight block mt-1 truncate">Painel de Escritórios</span>
-            </div>
-          </div>
+        {!isCollapsed ? (
+          <AppLogo size="md" />
+        ) : (
+          <AppLogo size="sm" showSubtitle={false} />
         )}
 
         <button 
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-1.5 rounded-xl bg-[#222222] hover:bg-[#2A2A2A] text-slate-400 hover:text-white transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center flex-shrink-0"
+          className="w-8 h-8 rounded-full bg-[#1E1E1E] hover:bg-[#282828] border border-[#2B2B2B] text-slate-400 hover:text-white transition-all flex items-center justify-center flex-shrink-0 cursor-pointer active:scale-95 shadow-md"
           title={isCollapsed ? "Expandir menu" : "Recolher menu"}
         >
           <ChevronLeft className={`w-4 h-4 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
@@ -143,7 +136,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {menuSections.map((section, idx) => (
           <div key={idx} className="space-y-1.5">
             {!isCollapsed ? (
-              <h3 className="px-3 text-[10px] font-extrabold text-slate-500 tracking-widest uppercase">
+              <h3 className="px-3 text-[11px] font-extrabold text-slate-500 tracking-widest uppercase">
                 {section.title}
               </h3>
             ) : (
@@ -161,19 +154,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       setActiveTab(item.id);
                       onCloseMobile?.();
                     }}
-                    className={`w-full flex items-center rounded-xl text-xs font-semibold transition-all duration-200 ease-out transform ${
+                    className={`w-full flex items-center rounded-2xl text-xs font-bold transition-all duration-200 ease-out ${
                       isCollapsed 
-                        ? 'justify-center p-2.5' 
-                        : 'justify-start gap-3 px-3 py-2.5'
+                        ? 'justify-center p-3' 
+                        : 'justify-start gap-3 px-3.5 py-3'
                     } ${
                       isActive 
-                        ? `bg-[#1C1C1C] text-brand-yellow border border-brand-yellow/30 shadow-lg font-bold ${!isCollapsed ? 'translate-x-1' : ''}` 
-                        : 'text-slate-400 hover:text-white hover:bg-[#1C1C1C] border border-transparent hover:border-[#262626]'
+                        ? 'bg-[#141414] text-[#FACC15] border border-[#EAB308]/80 shadow-lg shadow-amber-950/20' 
+                        : 'text-slate-400 hover:text-white hover:bg-[#141414] border border-transparent hover:border-[#222222]'
                     }`}
                     title={isCollapsed ? item.label : undefined}
                   >
-                    <Icon className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${
-                      isActive ? 'text-brand-yellow scale-110' : 'text-slate-400 group-hover:text-slate-200'
+                    <Icon className={`w-4.5 h-4.5 flex-shrink-0 transition-transform duration-200 ${
+                      isActive ? 'text-[#FACC15] scale-105' : 'text-slate-400 group-hover:text-slate-200'
                     }`} />
 
                     {!isCollapsed && (
@@ -181,7 +174,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     )}
 
                     {isActive && !isCollapsed && (
-                      <span className="ml-auto w-1.5 h-1.5 rounded-full bg-brand-yellow shadow-glow-yellow flex-shrink-0" />
+                      <span className="ml-auto w-2 h-2 rounded-full bg-[#FACC15] shadow-glow-yellow flex-shrink-0" />
                     )}
                   </button>
                 );

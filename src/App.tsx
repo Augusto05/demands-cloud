@@ -35,13 +35,15 @@ import * as XLSX from 'xlsx';
 
 import { performInitialMigration, fetchAllStorage } from './services/syncService';
 import { supabase, isSupabaseConfigured } from './services/supabaseClient';
+import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { AuthModal } from './components/AuthModal';
 
 export const App: React.FC = () => {
-  // Supabase Auth State
+  // Supabase Auth State & Unauthenticated Navigation
   const [userSession, setUserSession] = useState<any>(null);
   const [authChecking, setAuthChecking] = useState<boolean>(isSupabaseConfigured);
+  const [authViewMode, setAuthViewMode] = useState<'landing' | 'login'>('landing');
 
   // App State
   const [offices, setOffices] = useState<Office[]>(getStoredOffices);
@@ -230,8 +232,16 @@ export const App: React.FC = () => {
     );
   }
 
-  // Render Full Screen Dedicated LoginPage if Unauthenticated
+  // Render Landing Page or LoginPage when Unauthenticated
   if (!userSession) {
+    if (authViewMode === 'landing') {
+      return (
+        <LandingPage 
+          onNavigateToLogin={() => setAuthViewMode('login')} 
+        />
+      );
+    }
+
     return (
       <LoginPage 
         onLoginSuccess={async () => {
@@ -240,6 +250,7 @@ export const App: React.FC = () => {
             setUserSession(data.session);
           }
         }} 
+        onBackToLanding={() => setAuthViewMode('landing')}
       />
     );
   }

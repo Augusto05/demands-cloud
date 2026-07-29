@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Environment / Secrets
+.env
+.env*.local
+
+# Build / Output
+dist/
+build/
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+.gemini/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Data files, CSV dumps & local databases
+*.csv
+*.xlsx
+cruzador_blocklist/saida/
+cruzador_blocklist/temp/
+demands_db_data/

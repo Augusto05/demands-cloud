@@ -1,0 +1,169 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  background-color: #050505 !important;
+  color: #f2f2f7;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #050505;
+}
+::-webkit-scrollbar-thumb {
+  background: #1E1E1E;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2A2A2A;
+}
+
+/* Master Structural Card & Background Utilities - 100% Solid #101010 */
+.glass-card,
+.bg-dark-800,
+.bg-dark-850 {
+  background-color: #101010 !important;
+}
+
+.bg-dark-900 {
+  background-color: #050505 !important;
+}
+
+.bg-dark-700 {
+  background-color: #161616 !important;
+}
+
+.bg-dark-600 {
+  background-color: #1F1F1F !important;
+}
+
+/* Universal Structural Neutral Border Rules - 100% Neutral #222222 */
+.border-slate-800,
+.border-slate-700,
+.border-slate-900,
+.border-slate-600,
+.border-dark-800,
+.border-dark-700 {
+  border-color: #222222 !important;
+}
+
+.border-slate-800\/80,
+.border-slate-800\/60,
+.border-slate-700\/80,
+.border-slate-700\/60 {
+  border-color: #222222 !important;
+}
+
+.divide-slate-800,
+.divide-slate-700 {
+  border-color: #222222 !important;
+}
+
+/* Master Interactive Animation System (Ultra-Smooth & Silky) */
+
+/* 1. Page & Tab Entrance Keyframes */
+@keyframes pageFadeEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-fadeIn, .page-enter {
+  animation: pageFadeEnter 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  will-change: opacity, transform;
+}
+
+/* 2. Modal & Popup Scale Up Keyframes */
+@keyframes modalPopScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-scaleUp {
+  animation: modalPopScale 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  will-change: opacity, transform;
+}
+
+/* 3. Universal Button & Clickable Element Tactile Feedback */
+button,
+a,
+[role="button"],
+input[type="submit"],
+input[type="button"] {
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), 
+              background-color 0.22s ease, 
+              border-color 0.22s ease, 
+              box-shadow 0.22s ease, 
+              opacity 0.22s ease !important;
+}
+
+button:active,
+a:active,
+[role="button"]:active,
+input[type="submit"]:active {
+  transform: scale(0.95) !important;
+  opacity: 0.88 !important;
+  transition: transform 0.1s ease !important;
+}
+
+/* 4. Card Levitation & Hover Feedback */
+.glass-card-hover,
+.card-hover-effect {
+  transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), 
+              box-shadow 0.38s ease, 
+              border-color 0.38s ease !important;
+  will-change: transform;
+}
+
+.glass-card-hover:hover,
+.card-hover-effect:hover {
+  transform: translateY(-4px) scale(1.008) !important;
+  box-shadow: 0 14px 35px -10px rgba(0, 0, 0, 0.8), 0 0 18px -4px rgba(255, 223, 0, 0.18) !important;
+  border-color: #383838 !important;
+}
+
+/* Glowing Border Effects */
+.border-glow-purple {
+  box-shadow: 0 0 15px -3px rgba(139, 92, 246, 0.3);
+  border-color: rgba(139, 92, 246, 0.4) !important;
+}
+
+.border-glow-cyan {
+  box-shadow: 0 0 15px -3px rgba(0, 242, 254, 0.3);
+  border-color: rgba(0, 242, 254, 0.4) !important;
+}
+
+.border-glow-green {
+  box-shadow: 0 0 15px -3px rgba(16, 185, 129, 0.3);
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+.border-glow-yellow {
+  box-shadow: 0 0 15px -3px rgba(255, 223, 0, 0.3);
+  border-color: rgba(255, 223, 0, 0.4) !important;
+}
+
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spinSlow 8s linear infinite;
+}

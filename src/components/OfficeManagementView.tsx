@@ -74,6 +74,8 @@ export const OfficeManagementView: React.FC<OfficeManagementViewProps> = ({
       setTimeout(() => setSavedSuccess(false), 2500);
     }
   };
+  const currentUsername = localStorage.getItem('demands_current_username') || '';
+  const isAdmin = currentUsername.trim().toLowerCase() === 'admin';
 
   return (
     <div className="space-y-6">
@@ -156,7 +158,7 @@ export const OfficeManagementView: React.FC<OfficeManagementViewProps> = ({
               placeholder="Ex: Escritório Alfa"
               value={newOfficeName}
               onChange={(e) => setNewOfficeName(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-[#0A0A0A] border border-[#222222] text-white text-xs font-bold focus:outline-none"
+              className="w-full px-3 py-2.5 rounded-xl bg-[#0A0A0A] border border-[#222222] text-white text-xs font-bold focus:outline-none"
             />
           </div>
 
@@ -166,7 +168,7 @@ export const OfficeManagementView: React.FC<OfficeManagementViewProps> = ({
               type="number"
               value={newDailyMeta}
               onChange={(e) => setNewDailyMeta(parseInt(e.target.value) || 0)}
-              className="w-full px-3 py-2 rounded-xl bg-[#0A0A0A] border border-[#222222] text-white text-xs font-bold focus:outline-none"
+              className="w-full px-3 py-2.5 rounded-xl bg-[#0A0A0A] border border-[#222222] text-white text-xs font-bold focus:outline-none"
             />
           </div>
 
@@ -190,171 +192,173 @@ export const OfficeManagementView: React.FC<OfficeManagementViewProps> = ({
         </button>
       </div>
 
-      {/* Admin User Provisioning Panel */}
-      <div className="p-6 rounded-2xl bg-dark-800 border border-slate-800 shadow-xl space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <Shield className="w-5 h-5 text-brand-yellow" />
-            <span>Gestão de Usuários (Painel do Administrador)</span>
-          </h3>
-          <span className="text-[11px] font-bold text-slate-400 bg-[#141414] px-2.5 py-1 rounded-lg border border-[#222222]">
-            Provisionamento de Acessos
-          </span>
-        </div>
-
-        <p className="text-xs text-slate-400">
-          Crie novos usuários do sistema definindo seus nomes de usuário (usernames) e senhas de acesso. Os usuários cadastrados poderão logar na tela inicial.
-        </p>
-
-        {userErrorMsg && (
-          <div className="p-3 rounded-xl bg-red-950/60 border border-red-500/40 text-red-300 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
-            <span>{userErrorMsg}</span>
+      {/* Admin User Provisioning Panel - VISIBLE TO MASTER ADMIN ONLY */}
+      {isAdmin && (
+        <div className="p-6 rounded-2xl bg-dark-800 border border-slate-800 shadow-xl space-y-4 animate-fadeIn">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <Shield className="w-5 h-5 text-brand-yellow" />
+              <span>Gestão de Usuários (Painel do Administrador)</span>
+            </h3>
+            <span className="text-[11px] font-bold text-slate-400 bg-[#141414] px-2.5 py-1 rounded-lg border border-[#222222]">
+              Provisionamento de Acessos
+            </span>
           </div>
-        )}
 
-        {userSuccessMsg && (
-          <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-            <span>{userSuccessMsg}</span>
-          </div>
-        )}
+          <p className="text-xs text-slate-400">
+            Crie novos usuários do sistema definindo seus nomes de usuário (usernames) e senhas de acesso. Os usuários cadastrados poderão logar na tela inicial.
+          </p>
 
-        <form onSubmit={async (e) => {
-          e.preventDefault();
-          const cleanUser = newUserEmail.trim().toLowerCase();
-          const cleanPass = newUserPassword.trim();
+          {userErrorMsg && (
+            <div className="p-3 rounded-xl bg-red-950/60 border border-red-500/40 text-red-300 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+              <span>{userErrorMsg}</span>
+            </div>
+          )}
 
-          if (!cleanUser || !cleanPass) {
-            setUserErrorMsg('Preencha o nome de usuário e a senha.');
-            return;
-          }
-          if (cleanPass.length < 6) {
-            setUserErrorMsg('A senha do usuário deve ter no mínimo 6 caracteres.');
-            return;
-          }
+          {userSuccessMsg && (
+            <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+              <span>{userSuccessMsg}</span>
+            </div>
+          )}
 
-          setUserCreating(true);
-          setUserErrorMsg(null);
-          setUserSuccessMsg(null);
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            const cleanUser = newUserEmail.trim().toLowerCase();
+            const cleanPass = newUserPassword.trim();
 
-          try {
-            // Save to authorized users store (rate-limit-free)
-            addAppUser(cleanUser, cleanPass, 'user');
-            setAppUsers(getStoredUsers());
-
-            // Background Supabase signup attempt (swallowing rate limit errors)
-            if (supabase) {
-              const targetAuthEmail = cleanUser.includes('@') ? cleanUser : `${cleanUser}@demands.cloud`;
-              supabase.auth.signUp({
-                email: targetAuthEmail,
-                password: cleanPass,
-                options: { data: { username: cleanUser, role: 'user' } }
-              }).catch(() => {});
+            if (!cleanUser || !cleanPass) {
+              setUserErrorMsg('Preencha o nome de usuário e a senha.');
+              return;
+            }
+            if (cleanPass.length < 6) {
+              setUserErrorMsg('A senha do usuário deve ter no mínimo 6 caracteres.');
+              return;
             }
 
-            setUserSuccessMsg(`Usuário "${cleanUser}" cadastrado com sucesso! Credenciais ativas para login imediato.`);
-            setNewUserEmail('');
-            setNewUserPassword('');
-          } catch (err: any) {
-            console.error(err);
-            setUserErrorMsg(err.message || 'Erro ao criar usuário.');
-          } finally {
-            setUserCreating(false);
-          }
-        }} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-          <div>
-            <label className="text-xs font-semibold text-slate-400 block mb-1 flex items-center gap-1">
-              <UserPlus className="w-3.5 h-3.5 text-brand-yellow" />
-              <span>Nome de Usuário (Username)</span>
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="Ex: joao ou maria"
-              value={newUserEmail}
-              onChange={(e) => setNewUserEmail(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl bg-[#0A0A0A] border border-[#222222] text-white text-xs font-bold focus:outline-none focus:border-brand-yellow"
-            />
-          </div>
+            setUserCreating(true);
+            setUserErrorMsg(null);
+            setUserSuccessMsg(null);
 
-          <div>
-            <label className="text-xs font-semibold text-slate-400 block mb-1 flex items-center gap-1">
-              <KeyRound className="w-3.5 h-3.5 text-brand-yellow" />
-              <span>Senha Inicial de Acesso</span>
-            </label>
-            <input
-              type="password"
-              required
-              minLength={6}
-              placeholder="••••••••"
-              value={newUserPassword}
-              onChange={(e) => setNewUserPassword(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl bg-[#0A0A0A] border border-[#222222] text-white text-xs font-bold focus:outline-none focus:border-brand-yellow"
-            />
-          </div>
+            try {
+              // Save to authorized users store (rate-limit-free)
+              addAppUser(cleanUser, cleanPass, 'user');
+              setAppUsers(getStoredUsers());
 
-          <div>
-            <button
-              type="submit"
-              disabled={userCreating}
-              className="w-full px-4 py-2.5 rounded-xl bg-brand-yellow hover:bg-yellow-400 text-slate-950 text-xs font-extrabold transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer active:scale-95 disabled:opacity-50"
-            >
-              {userCreating ? (
-                <span className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <>
-                  <UserPlus className="w-4 h-4" />
-                  <span>Cadastrar Usuário</span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
+              // Background Supabase signup attempt (swallowing rate limit errors)
+              if (supabase) {
+                const targetAuthEmail = cleanUser.includes('@') ? cleanUser : `${cleanUser}@demands.cloud`;
+                supabase.auth.signUp({
+                  email: targetAuthEmail,
+                  password: cleanPass,
+                  options: { data: { username: cleanUser, role: 'user' } }
+                }).catch(() => {});
+              }
 
-        {/* List of Registered Users */}
-        <div className="pt-4 border-t border-[#222222] space-y-3">
-          <h4 className="text-xs font-bold text-slate-300 flex items-center gap-2">
-            <Users className="w-4 h-4 text-brand-yellow" />
-            <span>Usuários Ativos no Sistema ({appUsers.length + 1})</span>
-          </h4>
-
-          <div className="space-y-2">
-            {/* Master Admin Row */}
-            <div className="p-3 rounded-xl bg-[#0A0A0A] border border-[#222222] flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-brand-yellow" />
-                <span className="font-extrabold text-white">admin</span>
-                <span className="text-[10px] font-bold text-brand-yellow bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">Administrador Mestre</span>
-              </div>
-              <span className="text-[11px] text-slate-500 font-mono">Permissões Totais</span>
+              setUserSuccessMsg(`Usuário "${cleanUser}" cadastrado com sucesso! Credenciais ativas para login imediato.`);
+              setNewUserEmail('');
+              setNewUserPassword('');
+            } catch (err: any) {
+              console.error(err);
+              setUserErrorMsg(err.message || 'Erro ao criar usuário.');
+            } finally {
+              setUserCreating(false);
+            }
+          }} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+            <div>
+              <label className="text-xs font-semibold text-slate-400 block mb-1 flex items-center gap-1">
+                <UserPlus className="w-3.5 h-3.5 text-brand-yellow" />
+                <span>Nome de Usuário (Username)</span>
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="Ex: joao ou maria"
+                value={newUserEmail}
+                onChange={(e) => setNewUserEmail(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl bg-[#0A0A0A] border border-[#222222] text-white text-xs font-bold focus:outline-none focus:border-brand-yellow"
+              />
             </div>
 
-            {/* Created Users Rows */}
-            {appUsers.map(usr => (
-              <div key={usr.id} className="p-3 rounded-xl bg-[#0A0A0A] border border-[#222222] flex items-center justify-between text-xs hover:border-slate-700 transition-colors">
+            <div>
+              <label className="text-xs font-semibold text-slate-400 block mb-1 flex items-center gap-1">
+                <KeyRound className="w-3.5 h-3.5 text-brand-yellow" />
+                <span>Senha Inicial de Acesso</span>
+              </label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                placeholder="••••••••"
+                value={newUserPassword}
+                onChange={(e) => setNewUserPassword(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl bg-[#0A0A0A] border border-[#222222] text-white text-xs font-bold focus:outline-none focus:border-brand-yellow"
+              />
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                disabled={userCreating}
+                className="w-full px-4 py-2.5 rounded-xl bg-brand-yellow hover:bg-yellow-400 text-slate-950 text-xs font-extrabold transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer active:scale-95 disabled:opacity-50"
+              >
+                {userCreating ? (
+                  <span className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4" />
+                    <span>Cadastrar Usuário</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+
+          {/* List of Registered Users */}
+          <div className="pt-4 border-t border-[#222222] space-y-3">
+            <h4 className="text-xs font-bold text-slate-300 flex items-center gap-2">
+              <Users className="w-4 h-4 text-brand-yellow" />
+              <span>Usuários Ativos no Sistema ({appUsers.length + 1})</span>
+            </h4>
+
+            <div className="space-y-2">
+              {/* Master Admin Row */}
+              <div className="p-3 rounded-xl bg-[#0A0A0A] border border-[#222222] flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                  <span className="font-extrabold text-white">{usr.username}</span>
-                  <span className="text-[10px] font-bold text-slate-400 bg-[#161616] px-2 py-0.5 rounded border border-[#262626]">Operador</span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-brand-yellow" />
+                  <span className="font-extrabold text-white">admin</span>
+                  <span className="text-[10px] font-bold text-brand-yellow bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">Administrador Mestre</span>
                 </div>
-                <button
-                  onClick={() => {
-                    if (confirm(`Deseja revogar o acesso do usuário "${usr.username}"?`)) {
-                      removeAppUser(usr.id);
-                      setAppUsers(getStoredUsers());
-                    }
-                  }}
-                  className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors cursor-pointer"
-                  title="Revogar Acesso"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                <span className="text-[11px] text-slate-500 font-mono">Permissões Totais</span>
               </div>
-            ))}
+
+              {/* Created Users Rows */}
+              {appUsers.map(usr => (
+                <div key={usr.id} className="p-3 rounded-xl bg-[#0A0A0A] border border-[#222222] flex items-center justify-between text-xs hover:border-slate-700 transition-colors">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                    <span className="font-extrabold text-white">{usr.username}</span>
+                    <span className="text-[10px] font-bold text-slate-400 bg-[#161616] px-2 py-0.5 rounded border border-[#262626]">Operador</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (confirm(`Deseja revogar o acesso do usuário "${usr.username}"?`)) {
+                        removeAppUser(usr.id);
+                        setAppUsers(getStoredUsers());
+                      }
+                    }}
+                    className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors cursor-pointer"
+                    title="Revogar Acesso"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

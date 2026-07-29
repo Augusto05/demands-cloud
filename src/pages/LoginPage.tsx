@@ -10,7 +10,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
-import { verifyAppUser } from '../services/userService';
+import { verifyAppUser, getUserDisplayName } from '../services/userService';
 import { AppLogo } from '../components/AppLogo';
 
 interface LoginPageProps {
@@ -43,7 +43,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
     try {
       // 1. Check master admin OR local/synced user store credentials first
       if (verifyAppUser(cleanUsername, cleanPassword)) {
+        const displayName = getUserDisplayName(cleanUsername);
         localStorage.setItem('demands_current_username', cleanUsername);
+        localStorage.setItem('demands_current_name', displayName);
         localStorage.setItem('demands_auth_active', 'true');
 
         // Background Supabase Auth sync attempt
@@ -65,7 +67,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
         });
 
         if (!error && data?.session) {
+          const displayName = getUserDisplayName(cleanUsername);
           localStorage.setItem('demands_current_username', cleanUsername);
+          localStorage.setItem('demands_current_name', displayName);
           localStorage.setItem('demands_auth_active', 'true');
           onLoginSuccess();
           return;

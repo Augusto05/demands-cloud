@@ -22,6 +22,7 @@ export const OfficeManagementView: React.FC<OfficeManagementViewProps> = ({
   const [newColor, setNewColor] = useState('#3B82F6');
 
   // New Admin User Provisioning Form
+  const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPassword, setNewUserPassword] = useState('');
   const [userCreating, setUserCreating] = useState(false);
@@ -227,6 +228,7 @@ export const OfficeManagementView: React.FC<OfficeManagementViewProps> = ({
             e.preventDefault();
             const cleanUser = newUserEmail.trim().toLowerCase();
             const cleanPass = newUserPassword.trim();
+            const cleanName = newUserName.trim();
 
             if (!cleanUser || !cleanPass) {
               setUserErrorMsg('Preencha o nome de usuário e a senha.');
@@ -243,7 +245,7 @@ export const OfficeManagementView: React.FC<OfficeManagementViewProps> = ({
 
             try {
               // Save to authorized users store (rate-limit-free)
-              addAppUser(cleanUser, cleanPass, 'user');
+              addAppUser(cleanUser, cleanPass, cleanName, 'user');
               setAppUsers(getStoredUsers());
 
               // Background Supabase signup attempt (swallowing rate limit errors)
@@ -252,11 +254,12 @@ export const OfficeManagementView: React.FC<OfficeManagementViewProps> = ({
                 supabase.auth.signUp({
                   email: targetAuthEmail,
                   password: cleanPass,
-                  options: { data: { username: cleanUser, role: 'user' } }
+                  options: { data: { username: cleanUser, name: cleanName, role: 'user' } }
                 }).catch(() => {});
               }
 
-              setUserSuccessMsg(`Usuário "${cleanUser}" cadastrado com sucesso! Credenciais ativas para login imediato.`);
+              setUserSuccessMsg(`Usuário "${cleanName || cleanUser}" cadastrado com sucesso! Credenciais ativas para login imediato.`);
+              setNewUserName('');
               setNewUserEmail('');
               setNewUserPassword('');
             } catch (err: any) {
@@ -265,11 +268,26 @@ export const OfficeManagementView: React.FC<OfficeManagementViewProps> = ({
             } finally {
               setUserCreating(false);
             }
-          }} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+          }} className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+            <div>
+              <label className="text-xs font-semibold text-slate-400 block mb-1 flex items-center gap-1">
+                <UserCheck className="w-3.5 h-3.5 text-brand-yellow" />
+                <span>Nome de Exibição / Pessoal</span>
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="Ex: João Silva ou Marcos"
+                value={newUserName}
+                onChange={(e) => setNewUserName(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl bg-[#0A0A0A] border border-[#222222] text-white text-xs font-bold focus:outline-none focus:border-brand-yellow"
+              />
+            </div>
+
             <div>
               <label className="text-xs font-semibold text-slate-400 block mb-1 flex items-center gap-1">
                 <UserPlus className="w-3.5 h-3.5 text-brand-yellow" />
-                <span>Nome de Usuário (Username)</span>
+                <span>Username de Login</span>
               </label>
               <input
                 type="text"
@@ -284,7 +302,7 @@ export const OfficeManagementView: React.FC<OfficeManagementViewProps> = ({
             <div>
               <label className="text-xs font-semibold text-slate-400 block mb-1 flex items-center gap-1">
                 <KeyRound className="w-3.5 h-3.5 text-brand-yellow" />
-                <span>Senha Inicial de Acesso</span>
+                <span>Senha de Acesso</span>
               </label>
               <input
                 type="password"
@@ -327,7 +345,7 @@ export const OfficeManagementView: React.FC<OfficeManagementViewProps> = ({
               <div className="p-3 rounded-xl bg-[#0A0A0A] border border-[#222222] flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-brand-yellow" />
-                  <span className="font-extrabold text-white">admin</span>
+                  <span className="font-extrabold text-white">Administrador (admin)</span>
                   <span className="text-[10px] font-bold text-brand-yellow bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">Administrador Mestre</span>
                 </div>
                 <span className="text-[11px] text-slate-500 font-mono">Permissões Totais</span>
@@ -338,12 +356,13 @@ export const OfficeManagementView: React.FC<OfficeManagementViewProps> = ({
                 <div key={usr.id} className="p-3 rounded-xl bg-[#0A0A0A] border border-[#222222] flex items-center justify-between text-xs hover:border-slate-700 transition-colors">
                   <div className="flex items-center gap-2.5">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                    <span className="font-extrabold text-white">{usr.username}</span>
+                    <span className="font-extrabold text-white">{usr.name || usr.username}</span>
+                    <span className="text-[11px] text-slate-400 font-mono">(@{usr.username})</span>
                     <span className="text-[10px] font-bold text-slate-400 bg-[#161616] px-2 py-0.5 rounded border border-[#262626]">Operador</span>
                   </div>
                   <button
                     onClick={() => {
-                      if (confirm(`Deseja revogar o acesso do usuário "${usr.username}"?`)) {
+                      if (confirm(`Deseja revogar o acesso do usuário "${usr.name || usr.username}"?`)) {
                         removeAppUser(usr.id);
                         setAppUsers(getStoredUsers());
                       }

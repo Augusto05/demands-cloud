@@ -43,10 +43,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCloseMobile
 }) => {
   const currentUsername = localStorage.getItem('demands_current_username') || 'admin';
+  const currentDisplayName = localStorage.getItem('demands_current_name') || (currentUsername === 'admin' ? 'Administrador' : currentUsername);
 
   const handleLogout = async () => {
     localStorage.removeItem('demands_auth_active');
     localStorage.removeItem('demands_current_username');
+    localStorage.removeItem('demands_current_name');
     if (supabase) {
       try {
         await supabase.auth.signOut();
@@ -175,12 +177,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className={`flex items-center gap-2.5 p-2 rounded-xl bg-[#161616] border border-[#222222] ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-[#FACC15] text-slate-950 font-black flex items-center justify-center text-xs shadow-md flex-shrink-0 uppercase">
-              {currentUsername ? currentUsername[0] : 'A'}
+              {currentDisplayName ? currentDisplayName[0] : 'A'}
             </div>
             {!isCollapsed && (
               <div className="text-left leading-tight min-w-0">
-                <span className="text-xs font-extrabold text-white block truncate" title={currentUsername}>
-                  {currentUsername}
+                <span className="text-xs font-extrabold text-white block truncate" title={currentDisplayName}>
+                  {currentDisplayName}
                 </span>
                 <span className="text-[9px] text-[#FACC15] block font-extrabold tracking-wider uppercase">DEMANDS</span>
               </div>

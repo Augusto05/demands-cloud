@@ -224,6 +224,8 @@ export const KanbanView: React.FC = () => {
   const sortedColumns = [...store.columns].sort((a, b) => a.order - b.order);
   const [isMobileHeaderExpanded, setIsMobileHeaderExpanded] = useState(false);
 
+  const userDisplayName = localStorage.getItem('demands_current_name') || localStorage.getItem('demands_current_username') || 'Usuário';
+
   return (
     <div className="space-y-6 w-full max-w-full overflow-hidden">
       {/* Header Bar */}
@@ -234,7 +236,7 @@ export const KanbanView: React.FC = () => {
           className="lg:hidden flex items-center justify-between cursor-pointer"
         >
           <div className="flex items-center gap-2">
-            <span className="text-brand-yellow font-extrabold text-sm">Demandas Leadsale</span>
+            <span className="text-brand-yellow font-extrabold text-sm">{userDisplayName} | Demandas Leadsale</span>
             <span className="text-[10px] font-bold text-slate-400 bg-[#161616] px-2 py-0.5 rounded-md border border-[#222222]">
               {store.cards.length} tarefas
             </span>
@@ -262,7 +264,7 @@ export const KanbanView: React.FC = () => {
             {/* Title */}
             <div>
               <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
-                <span>Augusto</span>
+                <span>{userDisplayName}</span>
                 <span className="text-slate-600 font-light">|</span>
                 <span className="text-brand-yellow font-extrabold">Demandas Leadsale</span>
               </h1>

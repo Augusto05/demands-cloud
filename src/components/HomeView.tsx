@@ -255,6 +255,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
     setTimeout(() => setNoteSavedMsg(null), 3500);
   };
 
+  const userDisplayName = localStorage.getItem('demands_current_name') || localStorage.getItem('demands_current_username') || 'Usuário';
+
   if (offices.length === 0) {
     return (
       <div className="p-8 rounded-3xl bg-[#101010] border border-[#222222] text-center space-y-6 max-w-xl mx-auto my-12 shadow-2xl animate-fadeIn">
@@ -262,7 +264,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <Building2 className="w-8 h-8" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-2xl font-black text-white tracking-wide">Bem-vindo ao Demands!</h2>
+          <h2 className="text-2xl font-black text-white tracking-wide">{greeting}, {userDisplayName}!</h2>
           <p className="text-xs text-slate-400 font-medium max-w-md mx-auto leading-relaxed">
             Sua plataforma está pronta e 100% limpa. Cadastre seus escritórios corporativos para ativar os relatórios, dashboards e lançamentos diários.
           </p>
@@ -284,7 +286,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       <div className="bg-[#101010] p-5 sm:p-7 rounded-2xl border border-[#222222] shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight">
-            {greeting}, Augusto!
+            {greeting}, {userDisplayName}!
           </h1>
           <p className="text-sm sm:text-base text-slate-300 font-semibold mt-1">
             {dateFormattedDisplay}

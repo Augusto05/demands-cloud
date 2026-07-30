@@ -112,7 +112,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin }) =
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Card 1 */}
-            <div className="p-6 rounded-2xl bg-[#141414] border border-[#222222] space-y-4 hover:border-amber-500/50 hover:-translate-y-2 hover:shadow-[0_12px_30px_-8px_rgba(250,204,21,0.2)] transition-all duration-300 group cursor-pointer">
+            <div className="p-6 rounded-2xl bg-[#141414] border border-[#222222] space-y-4 hover:border-amber-500/50 hover:-translate-y-2 hover:shadow-[0_12px_30px_-8px_rgba(250,204,21,0.2)] transition-all duration-300 group cursor-pointer animate-slide-up delay-500">
               <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-110 group-hover:bg-amber-500/20 transition-all duration-300">
                 <BarChart3 className="w-6 h-6" />
               </div>
@@ -123,7 +123,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin }) =
             </div>
 
             {/* Card 2 */}
-            <div className="p-6 rounded-2xl bg-[#141414] border border-[#222222] space-y-4 hover:border-amber-500/50 hover:-translate-y-2 hover:shadow-[0_12px_30px_-8px_rgba(250,204,21,0.2)] transition-all duration-300 group cursor-pointer">
+            <div className="p-6 rounded-2xl bg-[#141414] border border-[#222222] space-y-4 hover:border-amber-500/50 hover:-translate-y-2 hover:shadow-[0_12px_30px_-8px_rgba(250,204,21,0.2)] transition-all duration-300 group cursor-pointer animate-slide-up delay-600">
               <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-110 group-hover:bg-amber-500/20 transition-all duration-300">
                 <LayoutList className="w-6 h-6" />
               </div>
@@ -134,7 +134,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin }) =
             </div>
 
             {/* Card 3 */}
-            <div className="p-6 rounded-2xl bg-[#141414] border border-[#222222] space-y-4 hover:border-amber-500/50 hover:-translate-y-2 hover:shadow-[0_12px_30px_-8px_rgba(250,204,21,0.2)] transition-all duration-300 group cursor-pointer">
+            <div className="p-6 rounded-2xl bg-[#141414] border border-[#222222] space-y-4 hover:border-amber-500/50 hover:-translate-y-2 hover:shadow-[0_12px_30px_-8px_rgba(250,204,21,0.2)] transition-all duration-300 group cursor-pointer animate-slide-up delay-700">
               <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-110 group-hover:bg-amber-500/20 transition-all duration-300">
                 <ShieldCheck className="w-6 h-6" />
               </div>
@@ -145,7 +145,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin }) =
             </div>
 
             {/* Card 4 */}
-            <div className="p-6 rounded-2xl bg-[#141414] border border-[#222222] space-y-4 hover:border-amber-500/50 hover:-translate-y-2 hover:shadow-[0_12px_30px_-8px_rgba(250,204,21,0.2)] transition-all duration-300 group cursor-pointer">
+            <div className="p-6 rounded-2xl bg-[#141414] border border-[#222222] space-y-4 hover:border-amber-500/50 hover:-translate-y-2 hover:shadow-[0_12px_30px_-8px_rgba(250,204,21,0.2)] transition-all duration-300 group cursor-pointer animate-slide-up delay-800">
               <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-110 group-hover:bg-amber-500/20 transition-all duration-300">
                 <Workflow className="w-6 h-6" />
               </div>
@@ -156,7 +156,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin }) =
             </div>
 
             {/* Card 5 */}
-            <div className="p-6 rounded-2xl bg-[#141414] border border-[#222222] space-y-4 hover:border-amber-500/50 hover:-translate-y-2 hover:shadow-[0_12px_30px_-8px_rgba(250,204,21,0.2)] transition-all duration-300 group cursor-pointer">
+            <div className="p-6 rounded-2xl bg-[#141414] border border-[#222222] space-y-4 hover:border-amber-500/50 hover:-translate-y-2 hover:shadow-[0_12px_30px_-8px_rgba(250,204,21,0.2)] transition-all duration-300 group cursor-pointer animate-slide-up delay-900">
               <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-110 group-hover:bg-amber-500/20 transition-all duration-300">
                 <Wand2 className="w-6 h-6" />
               </div>
@@ -167,7 +167,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin }) =
             </div>
 
             {/* Card 6 */}
-            <div className="p-6 rounded-2xl bg-[#141414] border border-[#222222] space-y-4 hover:border-amber-500/50 hover:-translate-y-2 hover:shadow-[0_12px_30px_-8px_rgba(250,204,21,0.2)] transition-all duration-300 group cursor-pointer">
+            <div className="p-6 rounded-2xl bg-[#141414] border border-[#222222] space-y-4 hover:border-amber-500/50 hover:-translate-y-2 hover:shadow-[0_12px_30px_-8px_rgba(250,204,21,0.2)] transition-all duration-300 group cursor-pointer animate-slide-up delay-1000">
               <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-110 group-hover:bg-amber-500/20 transition-all duration-300">
                 <Database className="w-6 h-6" />
               </div>

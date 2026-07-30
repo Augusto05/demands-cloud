@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { 
   ArrowRight, 
   ShieldCheck, 
@@ -8,8 +8,7 @@ import {
   Wand2, 
   CheckCircle2,
   Lock,
-  Database,
-  Sparkles
+  Database
 } from 'lucide-react';
 import { AppLogo } from '../components/AppLogo';
 
@@ -18,29 +17,6 @@ interface LandingPageProps {
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin }) => {
-  const [pageLoading, setPageLoading] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setPageLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (pageLoading) {
-    return (
-      <div className="fixed inset-0 z-50 bg-[#0A0A0A] flex flex-col items-center justify-center text-white space-y-4 font-sans animate-fadeIn">
-        <div className="relative flex items-center justify-center">
-          <div className="w-16 h-16 rounded-full border-2 border-amber-500/20 border-t-amber-400 animate-spin" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <AppLogo size="sm" showText={false} />
-          </div>
-        </div>
-        <div className="text-xs font-black tracking-widest text-amber-400 uppercase animate-pulse">
-          Carregando Demands...
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-slate-100 flex flex-col font-sans selection:bg-amber-500/30 selection:text-amber-200 antialiased relative overflow-x-hidden animate-fadeIn">
       {/* Dynamic Animated Ambient Background Lights */}
@@ -68,14 +44,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin }) =
       <section className="py-20 px-6 relative z-10">
         <div className="max-w-5xl mx-auto text-center space-y-8">
           
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-black tracking-wider uppercase animate-slide-up">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>PLATAFORMA CORPORATIVA DEMANDS</span>
-          </div>
-
           {/* Main Headline */}
-          <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white leading-tight animate-slide-up delay-100">
+          <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white leading-tight animate-slide-up">
             Gestão Unificada de <br className="hidden sm:block" />
             <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 bg-clip-text text-transparent">
               Escritórios, Conversões e Disparos

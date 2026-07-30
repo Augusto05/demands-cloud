@@ -1,7 +1,8 @@
 /**
- * Central Data Synchronization & Mac Disk Persistence Service
- * Enables real-time sync between Mac & Mobile Phone while guaranteeing zero data loss.
+ * Central Database Synchronization & Cloud Persistence Service (Supabase Database)
+ * Enables real-time multi-device sync across Mac, PC, & Mobile Phone.
  */
+import { supabase, isSupabaseConfigured } from './supabaseClient';
 
 // Helper to safely parse JSON
 const safeParse = <T>(val: string | null, fallback: T): T => {
@@ -14,8 +15,7 @@ const safeParse = <T>(val: string | null, fallback: T): T => {
 };
 
 /**
- * Fetch a data collection by key from Mac Disk Storage API.
- * If server has no data yet, AUTO-MIGRATES existing localStorage data to Mac disk.
+ * Fetch a data collection by key from Supabase Database (or local cache as fallback).
  */
 export async function getStorageItem<T>(
   key: string,
@@ -24,74 +24,84 @@ export async function getStorageItem<T>(
 ): Promise<T> {
   const localData = safeParse<T>(localStorage.getItem(localKey), fallbackDefault);
 
-  try {
-    const res = await fetch(`/api/storage?key=${encodeURIComponent(key)}`);
-    if (res.ok) {
-      const json = await res.json();
-      if (json && json.data !== undefined) {
-        // Sync local storage cache
-        localStorage.setItem(localKey, JSON.stringify(json.data));
-        return json.data as T;
+  if (supabase && isSupabaseConfigured) {
+    try {
+      const { data, error } = await supabase
+        .from('app_cloud_collections')
+        .select('data_json')
+        .eq('key', key)
+        .maybeSingle();
+
+      if (!error && data && data.data_json !== undefined) {
+        const cloudVal = typeof data.data_json === 'string' ? JSON.parse(data.data_json) : data.data_json;
+        localStorage.setItem(localKey, JSON.stringify(cloudVal));
+        return cloudVal as T;
       }
-    } else if (res.status === 404) {
-      // Disk file doesn't exist yet on Mac. Check if we have local data to auto-migrate!
-      const rawLocal = localStorage.getItem(localKey);
-      if (rawLocal !== null) {
-        // AUTO-MIGRATE: Upload existing local data to Mac disk
-        await saveStorageItem(key, localKey, localData);
-      }
+    } catch (e) {
+      console.warn(`[syncService] Supabase fetch info for key "${key}":`, e);
     }
-  } catch (e) {
-    console.warn(`[syncService] Server offline or fetch failed for key "${key}". Using local cache.`, e);
   }
 
   return localData;
 }
 
 /**
- * Save data collection to Mac Disk Storage API and local cache.
+ * Save data collection to Supabase Database and update local cache.
  */
 export async function saveStorageItem<T>(
   key: string,
   localKey: string,
   data: T
 ): Promise<void> {
-  // Update local cache first
+  // 1. Update local cache
   try {
     localStorage.setItem(localKey, JSON.stringify(data));
   } catch (e) {
     console.error(`[syncService] LocalStorage save error for "${localKey}":`, e);
   }
 
-  // Persist to Mac disk via Server API
-  try {
-    await fetch('/api/storage', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key, data })
-    });
-  } catch (e) {
-    console.warn(`[syncService] Mac disk save failed for key "${key}". Saved in local cache.`, e);
+  // 2. Persist directly to Supabase Database
+  if (supabase && isSupabaseConfigured) {
+    try {
+      await supabase
+        .from('app_cloud_collections')
+        .upsert({
+          key,
+          data_json: data,
+          updated_at: new Date().toISOString()
+        });
+    } catch (e) {
+      console.warn(`[syncService] Supabase cloud save catch for key "${key}":`, e);
+    }
   }
 }
 
 /**
- * Fetch all stored collections from Mac disk in 1 call.
+ * Fetch all stored collections from Supabase Database in 1 call.
  */
 export async function fetchAllStorage(): Promise<Record<string, any>> {
-  try {
-    const res = await fetch('/api/storage/all');
-    if (res.ok) {
-      return await res.json();
+  if (supabase && isSupabaseConfigured) {
+    try {
+      const { data, error } = await supabase
+        .from('app_cloud_collections')
+        .select('key, data_json');
+
+      if (!error && data && Array.isArray(data)) {
+        const result: Record<string, any> = {};
+        for (const row of data) {
+          result[row.key] = typeof row.data_json === 'string' ? JSON.parse(row.data_json) : row.data_json;
+        }
+        return result;
+      }
+    } catch (e) {
+      console.warn('[syncService] fetchAllStorage error:', e);
     }
-  } catch (e) {
-    console.warn('[syncService] fetchAllStorage error:', e);
   }
   return {};
 }
 
 /**
- * Initial Auto-Migration: Uploads ALL existing localStorage keys to Mac disk if not yet present.
+ * Initial Auto-Migration: Uploads ALL existing localStorage keys to Supabase Database.
  */
 export async function performInitialMigration(): Promise<void> {
   // Wipe legacy mock data from localStorage if present
@@ -116,8 +126,11 @@ export async function performInitialMigration(): Promise<void> {
     { key: 'notes', localKey: 'demands_notes_store' },
     { key: 'pasted_events', localKey: 'demands_google_pasted_events_v2' },
     { key: 'generated_files', localKey: 'demands_generated_files' },
-    { key: 'bugs', localKey: 'demands_bug_reports_v1' }
+    { key: 'bugs', localKey: 'demands_bug_reports_v1' },
+    { key: 'app_users', localKey: 'demands_app_users' }
   ];
+
+  if (!supabase || !isSupabaseConfigured) return;
 
   try {
     const existingServerData = await fetchAllStorage();
@@ -130,7 +143,7 @@ export async function performInitialMigration(): Promise<void> {
         try {
           const parsed = JSON.parse(rawLocal);
           await saveStorageItem(item.key, item.localKey, parsed);
-          console.log(`[syncService] Auto-migrated "${item.key}" from localStorage to Mac disk.`);
+          console.log(`[syncService] Auto-migrated "${item.key}" to Supabase Database.`);
         } catch (e) {
           console.error(`[syncService] Auto-migration error for "${item.key}":`, e);
         }

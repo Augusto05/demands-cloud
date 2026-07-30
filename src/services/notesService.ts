@@ -1,4 +1,5 @@
 import { NotesStore, NoteFolder, NoteItem } from '../types';
+import { saveStorageItem, getStorageItem, getUserScopedLocalKey } from './syncService';
 
 const STORAGE_KEY = 'demands_notes_store';
 
@@ -10,10 +11,9 @@ export const INITIAL_FOLDERS: NoteFolder[] = [
 
 export const INITIAL_NOTES: NoteItem[] = [];
 
-import { saveStorageItem, getStorageItem } from './syncService';
-
 export const getStoredNotesStore = (): NotesStore => {
-  const raw = localStorage.getItem(STORAGE_KEY);
+  const scopedLocalKey = getUserScopedLocalKey(STORAGE_KEY);
+  const raw = localStorage.getItem(scopedLocalKey);
   if (raw) {
     try {
       const parsed: NotesStore = JSON.parse(raw);
@@ -35,23 +35,6 @@ export const getStoredNotesStoreAsync = async (): Promise<NotesStore> => {
   return await getStorageItem<NotesStore>('notes', STORAGE_KEY, fallback);
 };
 
-import { supabase } from './supabaseClient';
-
 export const saveStoredNotesStore = (store: NotesStore): void => {
   saveStorageItem('notes', STORAGE_KEY, store);
-  const client = supabase;
-  if (client) {
-    client.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        client.from('notes_store').upsert({
-          user_id: data.user!.id,
-          folders: store.folders,
-          notes: store.notes,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'user_id' }).then(({ error }) => {
-          if (error) console.error('Supabase notes_store upsert error:', error);
-        });
-      }
-    });
-  }
 };

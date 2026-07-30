@@ -194,7 +194,7 @@ export const KanbanView: React.FC = () => {
       if (onlyOverdueFilter) {
         if (!card.dueDate) return false;
         const dueInfo = formatDueDateBadge(card.dueDate);
-        if (!dueInfo.isOverdue && !dueInfo.isToday) return false;
+        if (!dueInfo || (!dueInfo.isOverdue && !dueInfo.isToday)) return false;
       }
 
       return true;

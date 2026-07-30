@@ -10,8 +10,7 @@ import {
 import { INITIAL_OFFICES, INITIAL_BASE_DATA, INITIAL_DAILY_HOURLY } from '../data/initialData';
 import * as XLSX from 'xlsx';
 
-import { saveStorageItem } from './syncService';
-import { supabase } from './supabaseClient';
+import { saveStorageItem, getUserScopedLocalKey } from './syncService';
 
 const STORAGE_KEYS = {
   OFFICES: 'demands_offices',
@@ -21,7 +20,8 @@ const STORAGE_KEYS = {
 
 // LocalStorage & Server Sync helpers
 export const getStoredOffices = (): Office[] => {
-  const data = localStorage.getItem(STORAGE_KEYS.OFFICES);
+  const scopedKey = getUserScopedLocalKey(STORAGE_KEYS.OFFICES);
+  const data = localStorage.getItem(scopedKey);
   if (data) {
     try { return JSON.parse(data); } catch (e) { console.error(e); }
   }
@@ -30,40 +30,14 @@ export const getStoredOffices = (): Office[] => {
 
 export const saveStoredOffices = (offices: Office[]): void => {
   saveStorageItem('offices', STORAGE_KEYS.OFFICES, offices);
-  const client = supabase;
-  if (client) {
-    client.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        offices.forEach(off => {
-          client.from('offices').upsert({
-            user_id: data.user!.id,
-            office_id: off.id,
-            name: off.name,
-            daily_meta: off.dailyMeta,
-            color: off.color
-          }, { onConflict: 'user_id,office_id' }).then(({ error }) => {
-            if (error) console.error('Supabase office upsert error:', error);
-          });
-        });
-      }
-    });
-  }
 };
 
 export const getStoredBaseData = (): BaseDataRow[] => {
-  const data = localStorage.getItem(STORAGE_KEYS.BASE_DATA);
+  const scopedKey = getUserScopedLocalKey(STORAGE_KEYS.BASE_DATA);
+  const data = localStorage.getItem(scopedKey);
   if (data) {
     try {
       const parsed: BaseDataRow[] = JSON.parse(data);
-
-      // Check if localStorage contains corrupted contas entries (like contas === boletos for DM9 483)
-      const hasCorrupted = parsed.some(r => r.boletos > 100 && r.contas === r.boletos);
-      if (hasCorrupted) {
-        // Reset baseData to clean INITIAL_BASE_DATA
-        saveStorageItem('base_data', STORAGE_KEYS.BASE_DATA, INITIAL_BASE_DATA);
-        return INITIAL_BASE_DATA;
-      }
-
       return parsed.map(row => {
         let cleanContas = Math.round(row.contas || 0);
         if (row.contas > 0 && row.contas < 1 && row.boletos > 0) {
@@ -85,30 +59,11 @@ export const saveStoredBaseData = (baseData: BaseDataRow[]): void => {
 };
 
 export const getStoredDailyHourly = (): DailyHourlyStore => {
-  const data = localStorage.getItem(STORAGE_KEYS.DAILY_HOURLY);
+  const scopedKey = getUserScopedLocalKey(STORAGE_KEYS.DAILY_HOURLY);
+  const data = localStorage.getItem(scopedKey);
   if (data) {
     try {
-      const parsed: DailyHourlyStore = JSON.parse(data);
-      // Auto-heal if dailyHourly contains corrupted contas === boletos entries
-      let hasCorrupted = false;
-      Object.values(parsed).forEach(officeMap => {
-        Object.values(officeMap).forEach(offData => {
-          let sumB = 0;
-          if (offData.hourly) {
-            Object.values(offData.hourly).forEach(v => sumB += (v || 0));
-          }
-          if (sumB > 100 && offData.contas === sumB) {
-            hasCorrupted = true;
-          }
-        });
-      });
-
-      if (hasCorrupted) {
-        saveStorageItem('daily_hourly', STORAGE_KEYS.DAILY_HOURLY, INITIAL_DAILY_HOURLY);
-        return INITIAL_DAILY_HOURLY;
-      }
-
-      return parsed;
+      return JSON.parse(data);
     } catch (e) { console.error(e); }
   }
   return INITIAL_DAILY_HOURLY;

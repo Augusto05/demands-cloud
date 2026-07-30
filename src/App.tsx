@@ -33,7 +33,7 @@ import {
 } from './services/dataService';
 import * as XLSX from 'xlsx';
 
-import { performInitialMigration, fetchAllStorage } from './services/syncService';
+import { performInitialMigration, fetchAllStorage, isMasterAdmin, fetchConsolidatedAdminStorage, getStorageItem } from './services/syncService';
 import { supabase, isSupabaseConfigured } from './services/supabaseClient';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
@@ -44,6 +44,10 @@ export const App: React.FC = () => {
   const [userSession, setUserSession] = useState<any>(null);
   const [authChecking, setAuthChecking] = useState<boolean>(isSupabaseConfigured);
   const [authViewMode, setAuthViewMode] = useState<'landing' | 'login'>('landing');
+
+  const [localAuthActive, setLocalAuthActive] = useState<boolean>(() => {
+    return localStorage.getItem('demands_auth_active') === 'true';
+  });
 
   // App State
   const [offices, setOffices] = useState<Office[]>(getStoredOffices);
@@ -81,27 +85,30 @@ export const App: React.FC = () => {
   const [startDate, setStartDate] = useState<string>(todayStr);
   const [endDate, setEndDate] = useState<string>(todayStr);
 
-  // Perform initial auto-migration & real-time sync loop
+  // Perform initial auto-migration & real-time user-scoped sync loop
   useEffect(() => {
-    performInitialMigration().then(() => {
-      fetchAllStorage().then(allData => {
-        if (allData.offices) setOffices(allData.offices);
-        if (allData.base_data) setBaseData(allData.base_data);
-        if (allData.daily_hourly) setDailyHourly(allData.daily_hourly);
-        if (allData.notes) localStorage.setItem('demands_notes_store', JSON.stringify(allData.notes));
-      });
-    });
+    const loadUserData = async () => {
+      if (isMasterAdmin()) {
+        const consolidated = await fetchConsolidatedAdminStorage();
+        if (consolidated.offices) setOffices(consolidated.offices);
+        if (consolidated.baseData) setBaseData(consolidated.baseData);
+        if (consolidated.dailyHourly) setDailyHourly(consolidated.dailyHourly);
+      } else {
+        const userOffices = await getStorageItem<Office[]>('offices', 'demands_offices', []);
+        const userBaseData = await getStorageItem<BaseDataRow[]>('base_data', 'demands_base_data', []);
+        const userDailyHourly = await getStorageItem<DailyHourlyStore>('daily_hourly', 'demands_daily_hourly', {});
+        setOffices(userOffices);
+        setBaseData(userBaseData);
+        setDailyHourly(userDailyHourly);
+      }
+    };
 
-    const interval = setInterval(async () => {
-      const allData = await fetchAllStorage();
-      if (allData.offices) setOffices(allData.offices);
-      if (allData.base_data) setBaseData(allData.base_data);
-      if (allData.daily_hourly) setDailyHourly(allData.daily_hourly);
-      if (allData.notes) localStorage.setItem('demands_notes_store', JSON.stringify(allData.notes));
-    }, 5000);
+    performInitialMigration().then(loadUserData);
+
+    const interval = setInterval(loadUserData, 4000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [userSession, localAuthActive]);
 
   // Compute effectiveBaseData dynamically combining baseData + dailyHourly
   const effectiveBaseData = getEffectiveBaseData(baseData, dailyHourly, offices);
@@ -220,10 +227,6 @@ export const App: React.FC = () => {
     };
     reader.readAsArrayBuffer(file);
   };
-
-  const [localAuthActive, setLocalAuthActive] = useState<boolean>(() => {
-    return localStorage.getItem('demands_auth_active') === 'true';
-  });
 
   const isAuthenticated = !!userSession || localAuthActive;
 

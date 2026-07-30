@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Building2, Plus, Save, Trash2, Check, Target, UserPlus, Shield, KeyRound, AlertCircle, CheckCircle2, UserCheck, Users } from 'lucide-react';
 import { Office } from '../types';
 import { supabase } from '../services/supabaseClient';
-import { addAppUser, getStoredUsers, removeAppUser, AppUser } from '../services/userService';
+import { addAppUser, getStoredUsers, removeAppUser, syncAppUsersFromCloud, AppUser } from '../services/userService';
 
 interface OfficeManagementViewProps {
   offices: Office[];
@@ -31,6 +31,11 @@ export const OfficeManagementView: React.FC<OfficeManagementViewProps> = ({
 
   // Active App Users List
   const [appUsers, setAppUsers] = useState<AppUser[]>(getStoredUsers());
+
+  // Sync users list from cloud on mount
+  useEffect(() => {
+    syncAppUsersFromCloud().then(users => setAppUsers(users)).catch(() => {});
+  }, []);
 
   // Keep internal officeList synced if offices prop changes externally
   React.useEffect(() => {

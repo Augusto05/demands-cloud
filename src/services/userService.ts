@@ -1,4 +1,5 @@
 import { saveStorageItem } from './syncService';
+import { supabase, isSupabaseConfigured } from './supabaseClient';
 
 export interface AppUser {
   id: string;
@@ -24,8 +25,44 @@ export function getStoredUsers(): AppUser[] {
   return [];
 }
 
-export function saveStoredUsers(users: AppUser[]): void {
+export async function syncAppUsersFromCloud(): Promise<AppUser[]> {
+  if (supabase && isSupabaseConfigured) {
+    try {
+      const { data, error } = await supabase
+        .from('app_users_registry')
+        .select('users_json')
+        .eq('id', 'global_users')
+        .maybeSingle();
+
+      if (!error && data && data.users_json) {
+        const cloudUsers = typeof data.users_json === 'string' ? JSON.parse(data.users_json) : data.users_json;
+        if (Array.isArray(cloudUsers) && cloudUsers.length > 0) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudUsers));
+          return cloudUsers;
+        }
+      }
+    } catch (e) {
+      console.warn('[userService] Cloud sync fetch info:', e);
+    }
+  }
+  return getStoredUsers();
+}
+
+export async function saveStoredUsers(users: AppUser[]): Promise<void> {
+  // 1. Local Cache & Disk Sync
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
   saveStorageItem('app_users', STORAGE_KEY, users);
+
+  // 2. Cloud Sync via Supabase
+  if (supabase && isSupabaseConfigured) {
+    try {
+      await supabase
+        .from('app_users_registry')
+        .upsert({ id: 'global_users', users_json: users, updated_at: new Date().toISOString() });
+    } catch (e) {
+      console.warn('[userService] Cloud sync catch:', e);
+    }
+  }
 }
 
 export function addAppUser(username: string, passwordHash: string, name?: string, role: 'admin' | 'user' = 'user'): AppUser {

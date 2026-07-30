@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User, 
   KeyRound, 
@@ -10,7 +10,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
-import { verifyAppUser, getUserDisplayName } from '../services/userService';
+import { verifyAppUser, getUserDisplayName, syncAppUsersFromCloud } from '../services/userService';
 import { AppLogo } from '../components/AppLogo';
 
 interface LoginPageProps {
@@ -24,6 +24,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Sync users list from cloud on mount
+  useEffect(() => {
+    syncAppUsersFromCloud().catch(() => {});
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +46,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onBackToLa
     setLoading(true);
 
     try {
+      // Sync cloud users before credential check so new users are recognized across all devices
+      await syncAppUsersFromCloud().catch(() => {});
+
       // 1. Check master admin OR local/synced user store credentials first
       if (verifyAppUser(cleanUsername, cleanPassword)) {
         const displayName = getUserDisplayName(cleanUsername);

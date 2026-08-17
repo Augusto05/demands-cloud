@@ -3,45 +3,22 @@ import { Office, BaseDataRow, DailyHourlyStore, PeriodFilter } from '../types';
 export interface WhatsAppReportParams {
   offices: Office[];
   baseData: BaseDataRow[];
-  dailyHourly: DailyHourlyStore;
-  periodFilter: PeriodFilter;
-  startDate: string;
-  endDate: string;
+  dailyHourly?: DailyHourlyStore;
+  periodFilter?: PeriodFilter;
+  startDate?: string;
+  endDate?: string;
 }
 
 export const generateWhatsAppReportText = ({
   offices,
   baseData,
-  periodFilter,
-  startDate,
-  endDate
+  dailyHourly = {},
+  startDate = '',
+  endDate = ''
 }: WhatsAppReportParams): string => {
   // Determine filter bounds
   const currentRows = baseData.filter(row => {
     return (!startDate || row.data >= startDate) && (!endDate || row.data <= endDate);
-  });
-
-  // Calculate previous period date range for variation comparison
-  let prevStartDate = '';
-  let prevEndDate = '';
-
-  if (startDate && endDate) {
-    const startObj = new Date(startDate + 'T12:00:00Z');
-    const endObj = new Date(endDate + 'T12:00:00Z');
-    const diffDays = Math.max(1, Math.round((endObj.getTime() - startObj.getTime()) / (1000 * 60 * 60 * 24)) + 1);
-
-    const prevStartObj = new Date(startObj);
-    prevStartObj.setDate(prevStartObj.getDate() - diffDays);
-
-    const prevEndObj = new Date(startObj);
-    prevEndObj.setDate(prevEndObj.getDate() - 1);
-
-    prevStartDate = prevStartObj.toISOString().slice(0, 10);
-    prevEndDate = prevEndObj.toISOString().slice(0, 10);
-  }
-
-  const previousRows = baseData.filter(row => {
-    return (!prevStartDate || row.data >= prevStartDate) && (!prevEndDate || row.data <= prevEndDate);
   });
 
   // Determine Month-to-Date (MTD) context for Projection Calculation
@@ -65,65 +42,56 @@ export const generateWhatsAppReportText = ({
     return Math.round(num).toLocaleString('pt-BR');
   };
 
-  const formatVar = (pct: number): string => {
-    const rounded = Math.round(pct);
-    if (rounded >= 0) return `+${rounded}%`;
-    return `${rounded}%`;
-  };
+  // Helper to get logged hours for an office on reference date
+  const hours = [9, 10, 11, 12, 13, 14, 15, 16, 17];
+  const dParts = refDateStr.split('-');
+  const sheetKey = dParts.length === 3 ? `${dParts[2]}.${dParts[1]}` : refDateStr;
+  const storeForDate = dailyHourly[sheetKey] || dailyHourly[refDateStr] || {};
 
-  const reportLines: string[] = [];
-  reportLines.push('Segue o report diário das operações:\n');
+  let maxLoggedHours = 0;
+  Object.values(storeForDate).forEach(rec => {
+    if (rec && rec.hourly) {
+      const logged = hours.filter(h => rec.hourly[h] !== undefined && rec.hourly[h] !== null && rec.hourly[h] > 0).length;
+      if (logged > maxLoggedHours) maxLoggedHours = logged;
+    }
+  });
+
+  const reportSections: string[] = [];
+  reportSections.push('Segue o report diário das operações:');
 
   let totalBoletosCurr = 0;
-  let totalBoletosPrev = 0;
-  let totalContasCurr = 0;
-  let totalContasPrev = 0;
 
   offices.forEach(off => {
     const offName = off.name;
     const offCurRows = currentRows.filter(r => r.escritorio.toLowerCase() === offName.toLowerCase());
-    const offPrevRows = previousRows.filter(r => r.escritorio.toLowerCase() === offName.toLowerCase());
-
     const boletosCurr = offCurRows.reduce((s, r) => s + r.boletos, 0);
-    const boletosPrev = offPrevRows.reduce((s, r) => s + r.boletos, 0);
-    const contasCurr = offCurRows.reduce((s, r) => s + r.contas, 0);
-    const contasPrev = offPrevRows.reduce((s, r) => s + r.contas, 0);
-
     totalBoletosCurr += boletosCurr;
-    totalBoletosPrev += boletosPrev;
-    totalContasCurr += contasCurr;
-    totalContasPrev += contasPrev;
 
-    const varBoletosPct = boletosPrev > 0 ? ((boletosCurr - boletosPrev) / boletosPrev) * 100 : 0;
-    
+    // Logged hours from dailyHourly if available
+    const normOfficeName = offName.trim().toLowerCase();
+    const foundKey = Object.keys(storeForDate).find(k => k.trim().toLowerCase() === normOfficeName);
+    const officeRec = foundKey ? storeForDate[foundKey] : null;
+
+    let loggedHours = 0;
+    if (officeRec && officeRec.hourly) {
+      loggedHours = hours.filter(h => officeRec.hourly[h] !== undefined && officeRec.hourly[h] !== null && officeRec.hourly[h] > 0).length;
+    }
+
+    const activeHours = loggedHours > 0 ? loggedHours : 9;
+    const mediaHora = boletosCurr > 0 ? Math.round(boletosCurr / activeHours) : 0;
+
     // Month-to-Date (MTD) accumulated totals for realistic monthly projection
     const offMonthRows = monthRows.filter(r => r.escritorio.toLowerCase() === offName.toLowerCase());
     const mtdBoletos = offMonthRows.reduce((s, r) => s + r.boletos, 0);
-    const mtdContas = offMonthRows.reduce((s, r) => s + r.contas, 0);
 
-    // Calculate projected month-end total based on MTD pace (never less than MTD realized!)
     const projBoletos = mtdBoletos > 0 
       ? Math.max(mtdBoletos, Math.round((mtdBoletos / dayOfMonth) * totalDaysInMonth))
       : Math.round(boletosCurr * 20);
 
-    const varContasPct = contasPrev > 0 ? ((contasCurr - contasPrev) / contasPrev) * 100 : 0;
-    const projContas = mtdContas > 0
-      ? Math.max(mtdContas, Math.round((mtdContas / dayOfMonth) * totalDaysInMonth))
-      : Math.round(contasCurr * 20);
-
-    reportLines.push(`📌 ${offName}\n`);
-    reportLines.push(`* Boletos: ${formatNumber(boletosCurr)} | Projeção mensal: ${formatNumber(projBoletos)} | Variação: ${formatVar(varBoletosPct)}`);
-    
-    // RULE: If no contas abertas registered for the office on that day, omit the second line!
-    if (contasCurr > 0) {
-      reportLines.push(`* Contas abertas: ${formatNumber(contasCurr)} | Projeção mensal: ${formatNumber(projContas)} | Variação: ${formatVar(varContasPct)}`);
-    }
-
-    reportLines.push(''); // blank separator line
+    reportSections.push(`📌 ${offName}\n* Boletos: ${formatNumber(boletosCurr)} | Média: ${formatNumber(mediaHora)}/h | Projeção mensal: ${formatNumber(projBoletos)}`);
   });
 
   // Consolidado Block
-  const totalVarBoletosPct = totalBoletosPrev > 0 ? ((totalBoletosCurr - totalBoletosPrev) / totalBoletosPrev) * 100 : 0;
   const totalMtdBoletos = offices.reduce((sum, off) => {
     return sum + monthRows.filter(r => r.escritorio.toLowerCase() === off.name.toLowerCase()).reduce((s, r) => s + r.boletos, 0);
   }, 0);
@@ -132,21 +100,11 @@ export const generateWhatsAppReportText = ({
     ? Math.max(totalMtdBoletos, Math.round((totalMtdBoletos / dayOfMonth) * totalDaysInMonth))
     : Math.round(totalBoletosCurr * 20);
 
-  const totalVarContasPct = totalContasPrev > 0 ? ((totalContasCurr - totalContasPrev) / totalContasPrev) * 100 : 0;
-  const totalMtdContas = offices.reduce((sum, off) => {
-    return sum + monthRows.filter(r => r.escritorio.toLowerCase() === off.name.toLowerCase()).reduce((s, r) => s + r.contas, 0);
-  }, 0);
+  const consolidatedActiveHours = maxLoggedHours > 0 ? maxLoggedHours : 9;
+  const totalMediaHora = totalBoletosCurr > 0 ? Math.round(totalBoletosCurr / consolidatedActiveHours) : 0;
 
-  const totalProjContas = totalMtdContas > 0
-    ? Math.max(totalMtdContas, Math.round((totalMtdContas / dayOfMonth) * totalDaysInMonth))
-    : Math.round(totalContasCurr * 20);
+  reportSections.push(`📊 Consolidado\n* Boletos: ${formatNumber(totalBoletosCurr)} | Média: ${formatNumber(totalMediaHora)}/h | Projeção mensal: ${formatNumber(totalProjBoletos)}`);
 
-  reportLines.push('📊 Consolidado\n');
-  reportLines.push(`* Boletos: ${formatNumber(totalBoletosCurr)} | Projeção mensal: ${formatNumber(totalProjBoletos)} | Variação: ${formatVar(totalVarBoletosPct)}`);
-  
-  if (totalContasCurr > 0) {
-    reportLines.push(`* Contas abertas: ${formatNumber(totalContasCurr)} | Projeção mensal: ${formatNumber(totalProjContas)} | Variação: ${formatVar(totalVarContasPct)}`);
-  }
-
-  return reportLines.join('\n').trim();
+  return reportSections.join('\n\n').trim();
 };
+

@@ -66,9 +66,9 @@ export const SiscomDashboardView: React.FC = () => {
   const [produtividadeMailing, setProdutividadeMailing] = useState<string>('');
   const [atritados, setAtritados] = useState<string>('');
 
-  // UI & Chart Options (Controlled from the Left Control Panel)
+  // UI & Chart Options (Dual Axis ON by default so Contas Abertas has proper visual height)
   const [isPrintMode, setIsPrintMode] = useState<boolean>(false);
-  const [useDualAxis, setUseDualAxis] = useState<boolean>(false);
+  const [useDualAxis, setUseDualAxis] = useState<boolean>(true);
   const [showPointLabels, setShowPointLabels] = useState<boolean>(true);
   const [invertAtritadosColor, setInvertAtritadosColor] = useState<boolean>(true);
   const [copiedImage, setCopiedImage] = useState<boolean>(false);
@@ -390,7 +390,7 @@ export const SiscomDashboardView: React.FC = () => {
   // Render Clean Neutral PNG Canvas directly from data
   const generateDashboardCanvas = (): HTMLCanvasElement => {
     const scale = 2;
-    const width = 880;
+    const width = 920;
     const height = 560;
     const canvas = document.createElement('canvas');
     canvas.width = width * scale;
@@ -454,40 +454,78 @@ export const SiscomDashboardView: React.FC = () => {
     ctx.lineTo(width - 36, 82);
     ctx.stroke();
 
-    // Helper for minimalist delta text (arrow + %)
-    const drawDelta = (x: number, y: number, delta: number | null, invertColor = false) => {
-      if (delta === null || isNaN(delta)) {
-        ctx.font = '700 11px Inter, system-ui, sans-serif';
-        ctx.fillStyle = '#525252';
-        ctx.fillText('— 0%', x, y);
-        return;
-      }
-      const isZero = Math.abs(delta) < 0.05;
-      const isUp = delta > 0;
+    // Helper for compact pill badge next to value
+    const drawDeltaPill = (x: number, y: number, delta: number | null, invertColor = false) => {
+      const val = delta === null || isNaN(delta) ? 0 : delta;
+      const isZero = Math.abs(val) < 0.05;
+      const isUp = val > 0;
       const isGood = invertColor ? !isUp : isUp;
 
-      const arrow = isZero ? '—' : isUp ? '↑' : '↓';
-      const txt = `${arrow} ${Math.abs(delta).toFixed(1).replace('.', ',')}%`;
+      const arrow = isZero ? '—' : isUp ? '↗' : '↘';
+      const formattedNum =
+        Math.abs(val) >= 99.95
+          ? `${Math.round(Math.abs(val))}%`
+          : `${Math.abs(val).toFixed(1).replace('.', ',')}%`;
+      const txt = `${arrow} ${formattedNum}`;
 
-      ctx.font = '700 11px Inter, system-ui, sans-serif';
-      ctx.fillStyle = isZero ? '#737373' : isGood ? '#34D399' : '#F87171';
-      ctx.fillText(txt, x, y);
+      ctx.font = '700 9.5px Inter, system-ui, sans-serif';
+      const tw = ctx.measureText(txt).width + 10;
+      const th = 17;
+      roundRect(x, y - 13, tw, th, 5);
+
+      ctx.fillStyle = isZero
+        ? '#1F1F1F'
+        : isGood
+        ? 'rgba(16, 185, 129, 0.12)'
+        : 'rgba(244, 63, 94, 0.12)';
+      ctx.fill();
+
+      ctx.strokeStyle = isZero
+        ? '#2A2A2A'
+        : isGood
+        ? 'rgba(16, 185, 129, 0.25)'
+        : 'rgba(244, 63, 94, 0.25)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.fillStyle = isZero ? '#737373' : isGood ? '#34D399' : '#FB7185';
+      ctx.fillText(txt, x + 5, y - 1);
     };
 
-    // 3 Section Blocks (TRANSFERÊNCIAS | PRODUÇÃO | MAILING)
+    // 3 Section Blocks in 2 : 3 : 2 proportion (7 equal metric slots)
     const topY = 96;
-    const boxH = 114;
+    const boxH = 104;
     const gap = 12;
     const totalInnerW = width - 72;
-    const col1W = Math.floor(totalInnerW * 0.30);
-    const col2W = Math.floor(totalInnerW * 0.42);
-    const col3W = totalInnerW - col1W - col2W - gap * 2;
+    const availW = totalInnerW - gap * 2;
+    const col1W = Math.floor((availW * 2) / 7);
+    const col2W = Math.floor((availW * 3) / 7);
+    const col3W = availW - col1W - col2W;
 
     const col1X = 36;
     const col2X = col1X + col1W + gap;
     const col3X = col2X + col2W + gap;
 
-    // --- BLOCK 1: TRANSFERÊNCIAS ---
+    const drawMetricSlot = (
+      x: number,
+      y: number,
+      label: string,
+      valueStr: string,
+      delta: number | null,
+      invert = false
+    ) => {
+      ctx.fillStyle = '#A3A3A3';
+      ctx.font = '500 11px Inter, system-ui, sans-serif';
+      ctx.fillText(label, x, y);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '800 20px Inter, system-ui, sans-serif';
+      ctx.fillText(valueStr, x, y + 25);
+      const vw = ctx.measureText(valueStr).width;
+      drawDeltaPill(x + vw + 6, y + 22, delta, invert);
+    };
+
+    // --- BLOCK 1: TRANSFERÊNCIAS (2 slots) ---
     roundRect(col1X, topY, col1W, boxH, 12);
     ctx.fillStyle = '#161616';
     ctx.fill();
@@ -496,35 +534,26 @@ export const SiscomDashboardView: React.FC = () => {
 
     ctx.fillStyle = '#737373';
     ctx.font = '800 10px Inter, system-ui, sans-serif';
-    ctx.fillText('TRANSFERÊNCIAS', col1X + 16, topY + 24);
+    ctx.fillText('TRANSFERÊNCIAS', col1X + 16, topY + 22);
 
-    const mY = topY + 48;
-    // Total do Dia
-    ctx.fillStyle = '#A3A3A3';
-    ctx.font = '500 11px Inter, system-ui, sans-serif';
-    ctx.fillText(activeRange.isSingleDay ? 'Total do Dia' : 'Total Período', col1X + 16, mY);
+    const slot1W = Math.floor((col1W - 32) / 2);
+    const mY = topY + 46;
+    drawMetricSlot(
+      col1X + 16,
+      mY,
+      activeRange.isSingleDay ? 'Total do Dia' : 'Total Período',
+      displayedMetrics.totalTransferencias.toLocaleString('pt-BR'),
+      deltas.transferencias
+    );
+    drawMetricSlot(
+      col1X + 16 + slot1W,
+      mY,
+      'Média / Hora',
+      displayedMetrics.mediaHora.toFixed(1).replace('.', ','),
+      deltas.mediaHora
+    );
 
-    const valTransfStr = displayedMetrics.totalTransferencias.toLocaleString('pt-BR');
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = '800 22px Inter, system-ui, sans-serif';
-    ctx.fillText(valTransfStr, col1X + 16, mY + 26);
-    const wTransf = ctx.measureText(valTransfStr).width;
-    drawDelta(col1X + 16 + wTransf + 6, mY + 23, deltas.transferencias);
-
-    // Média / Hora
-    const col1MidX = col1X + Math.floor(col1W * 0.53);
-    ctx.fillStyle = '#A3A3A3';
-    ctx.font = '500 11px Inter, system-ui, sans-serif';
-    ctx.fillText('Média / Hora', col1MidX, mY);
-
-    const valMediaHStr = displayedMetrics.mediaHora.toFixed(1).replace('.', ',');
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = '800 22px Inter, system-ui, sans-serif';
-    ctx.fillText(valMediaHStr, col1MidX, mY + 26);
-    const wMediaH = ctx.measureText(valMediaHStr).width;
-    drawDelta(col1MidX + wMediaH + 6, mY + 23, deltas.mediaHora);
-
-    // --- BLOCK 2: PRODUÇÃO ---
+    // --- BLOCK 2: PRODUÇÃO (3 slots) ---
     roundRect(col2X, topY, col2W, boxH, 12);
     ctx.fillStyle = '#161616';
     ctx.fill();
@@ -533,48 +562,32 @@ export const SiscomDashboardView: React.FC = () => {
 
     ctx.fillStyle = '#737373';
     ctx.font = '800 10px Inter, system-ui, sans-serif';
-    ctx.fillText('PRODUÇÃO', col2X + 16, topY + 24);
+    ctx.fillText('PRODUÇÃO', col2X + 16, topY + 22);
 
-    const pSubW = Math.floor((col2W - 32) / 3);
-    // Leads Indicados
-    ctx.fillStyle = '#A3A3A3';
-    ctx.font = '500 11px Inter, system-ui, sans-serif';
-    ctx.fillText('Leads Indicados', col2X + 16, mY);
+    const slot2W = Math.floor((col2W - 32) / 3);
+    drawMetricSlot(
+      col2X + 16,
+      mY,
+      'Leads Indicados',
+      displayedMetrics.leadsIndicados.toLocaleString('pt-BR'),
+      deltas.leadsIndicados
+    );
+    drawMetricSlot(
+      col2X + 16 + slot2W,
+      mY,
+      'Contas Abertas',
+      displayedMetrics.contasAbertas.toLocaleString('pt-BR'),
+      deltas.contasAbertas
+    );
+    drawMetricSlot(
+      col2X + 16 + slot2W * 2,
+      mY,
+      '% Conversão',
+      `${displayedMetrics.conversaoPct.toFixed(1).replace('.', ',')}%`,
+      deltas.conversaoPct
+    );
 
-    const valLeadsStr = displayedMetrics.leadsIndicados.toLocaleString('pt-BR');
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = '800 22px Inter, system-ui, sans-serif';
-    ctx.fillText(valLeadsStr, col2X + 16, mY + 26);
-    const wLeads = ctx.measureText(valLeadsStr).width;
-    drawDelta(col2X + 16 + wLeads + 6, mY + 23, deltas.leadsIndicados);
-
-    // Contas Abertas
-    const p2X = col2X + 16 + pSubW;
-    ctx.fillStyle = '#A3A3A3';
-    ctx.font = '500 11px Inter, system-ui, sans-serif';
-    ctx.fillText('Contas Abertas', p2X, mY);
-
-    const valContasStr = displayedMetrics.contasAbertas.toLocaleString('pt-BR');
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = '800 22px Inter, system-ui, sans-serif';
-    ctx.fillText(valContasStr, p2X, mY + 26);
-    const wContas = ctx.measureText(valContasStr).width;
-    drawDelta(p2X + wContas + 6, mY + 23, deltas.contasAbertas);
-
-    // % Conversão
-    const p3X = col2X + 16 + pSubW * 2;
-    ctx.fillStyle = '#A3A3A3';
-    ctx.font = '500 11px Inter, system-ui, sans-serif';
-    ctx.fillText('% Conversão', p3X, mY);
-
-    const valConvStr = `${displayedMetrics.conversaoPct.toFixed(1).replace('.', ',')}%`;
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = '800 22px Inter, system-ui, sans-serif';
-    ctx.fillText(valConvStr, p3X, mY + 26);
-    const wConv = ctx.measureText(valConvStr).width;
-    drawDelta(p3X + wConv + 6, mY + 23, deltas.conversaoPct);
-
-    // --- BLOCK 3: MAILING ---
+    // --- BLOCK 3: MAILING (2 slots) ---
     roundRect(col3X, topY, col3W, boxH, 12);
     ctx.fillStyle = '#161616';
     ctx.fill();
@@ -583,32 +596,24 @@ export const SiscomDashboardView: React.FC = () => {
 
     ctx.fillStyle = '#737373';
     ctx.font = '800 10px Inter, system-ui, sans-serif';
-    ctx.fillText('MAILING', col3X + 16, topY + 24);
+    ctx.fillText('MAILING', col3X + 16, topY + 22);
 
-    // % Produtividade
-    ctx.fillStyle = '#A3A3A3';
-    ctx.font = '500 11px Inter, system-ui, sans-serif';
-    ctx.fillText('% Produtividade', col3X + 16, mY);
-
-    const valProdStr = `${displayedMetrics.produtividadeMailing.toFixed(1).replace('.', ',')}%`;
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = '800 22px Inter, system-ui, sans-serif';
-    ctx.fillText(valProdStr, col3X + 16, mY + 26);
-    const wProd = ctx.measureText(valProdStr).width;
-    drawDelta(col3X + 16 + wProd + 6, mY + 23, deltas.produtividadeMailing);
-
-    // % Atritados
-    const m3MidX = col3X + Math.floor(col3W * 0.53);
-    ctx.fillStyle = '#A3A3A3';
-    ctx.font = '500 11px Inter, system-ui, sans-serif';
-    ctx.fillText('% Atritados', m3MidX, mY);
-
-    const valAtritStr = `${displayedMetrics.atritados.toFixed(1).replace('.', ',')}%`;
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = '800 22px Inter, system-ui, sans-serif';
-    ctx.fillText(valAtritStr, m3MidX, mY + 26);
-    const wAtrit = ctx.measureText(valAtritStr).width;
-    drawDelta(m3MidX + wAtrit + 6, mY + 23, deltas.atritados, invertAtritadosColor);
+    const slot3W = Math.floor((col3W - 32) / 2);
+    drawMetricSlot(
+      col3X + 16,
+      mY,
+      '% Produtividade',
+      `${displayedMetrics.produtividadeMailing.toFixed(1).replace('.', ',')}%`,
+      deltas.produtividadeMailing
+    );
+    drawMetricSlot(
+      col3X + 16 + slot3W,
+      mY,
+      '% Atritados',
+      `${displayedMetrics.atritados.toFixed(1).replace('.', ',')}%`,
+      deltas.atritados,
+      invertAtritadosColor
+    );
 
     // --- CHART BOX (LAST 7 DAYS: LEADS INDICADOS VS CONTAS ABERTAS) ---
     const chartBoxY = topY + boxH + 14;
@@ -622,21 +627,23 @@ export const SiscomDashboardView: React.FC = () => {
     ctx.fillStyle = '#D4D4D4';
     ctx.font = '700 11px Inter, system-ui, sans-serif';
     ctx.fillText(
-      'COMPARATIVO ÚLTIMOS 7 DIAS — LEADS INDICADOS VS. CONTAS ABERTAS',
+      'EVOLUÇÃO ÚLTIMOS 7 DIAS — LEADS INDICADOS VS. CONTAS ABERTAS',
       52,
       chartBoxY + 26
     );
 
-    const plotLeft = 80;
-    const plotRight = width - 64;
-    const plotTop = chartBoxY + 48;
+    const plotLeft = 78;
+    const plotRight = width - 78;
+    const plotTop = chartBoxY + 50;
     const plotBottom = chartBoxY + chartBoxH - 48;
     const plotW = plotRight - plotLeft;
     const plotH = plotBottom - plotTop;
 
     const maxLeads = Math.max(10, ...chart7DaysSeries.map(d => d.leadsIndicados));
-    const maxContas = Math.max(5, ...chart7DaysSeries.map(d => d.contasAbertas));
-    const globalMax = Math.ceil(Math.max(maxLeads, maxContas) * 1.15);
+    const maxContas = Math.max(4, ...chart7DaysSeries.map(d => d.contasAbertas));
+    const leadsAxisMax = Math.ceil(maxLeads * 1.2);
+    const contasAxisMax = Math.ceil(maxContas * 1.35);
+    const singleAxisMax = Math.ceil(Math.max(maxLeads, maxContas) * 1.2);
 
     ctx.strokeStyle = '#222222';
     ctx.lineWidth = 1;
@@ -647,11 +654,18 @@ export const SiscomDashboardView: React.FC = () => {
       ctx.lineTo(plotRight, y);
       ctx.stroke();
 
-      const labelVal = Math.round(((useDualAxis ? maxLeads : globalMax) * i) / 4);
+      const leftVal = Math.round(((useDualAxis ? leadsAxisMax : singleAxisMax) * i) / 4);
       ctx.fillStyle = '#737373';
       ctx.font = '500 10px Inter, system-ui, sans-serif';
       ctx.textAlign = 'right';
-      ctx.fillText(String(labelVal), plotLeft - 10, y + 3);
+      ctx.fillText(String(leftVal), plotLeft - 10, y + 3);
+
+      if (useDualAxis) {
+        const rightVal = Math.round((contasAxisMax * i) / 4);
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#737373';
+        ctx.fillText(String(rightVal), plotRight + 10, y + 3);
+      }
     }
     ctx.textAlign = 'left';
 
@@ -669,14 +683,14 @@ export const SiscomDashboardView: React.FC = () => {
 
     const leadsPts = chart7DaysSeries.map((pt, idx) => {
       const x = plotLeft + idx * stepX;
-      const denom = useDualAxis ? Math.ceil(maxLeads * 1.15) : globalMax;
+      const denom = useDualAxis ? leadsAxisMax : singleAxisMax;
       const y = plotBottom - (pt.leadsIndicados / Math.max(1, denom)) * plotH;
       return { x, y, val: pt.leadsIndicados, label: pt.shortLabel };
     });
 
     const contasPts = chart7DaysSeries.map((pt, idx) => {
       const x = plotLeft + idx * stepX;
-      const denom = useDualAxis ? Math.ceil(maxContas * 1.15) : globalMax;
+      const denom = useDualAxis ? contasAxisMax : singleAxisMax;
       const y = plotBottom - (pt.contasAbertas / Math.max(1, denom)) * plotH;
       return { x, y, val: pt.contasAbertas, label: pt.shortLabel };
     });
@@ -688,7 +702,7 @@ export const SiscomDashboardView: React.FC = () => {
       ctx.fillText(p.label, p.x, plotBottom + 18);
     });
 
-    // Line 1: Leads Indicados (#FACC15 - Brand Yellow)
+    // Line 1: Leads Indicados (#FACC15)
     ctx.strokeStyle = '#FACC15';
     ctx.lineWidth = 2.2;
     ctx.beginPath();
@@ -698,7 +712,7 @@ export const SiscomDashboardView: React.FC = () => {
     });
     ctx.stroke();
 
-    // Line 2: Contas Abertas (#A3A3A3 - Clean Neutral Light Gray/White)
+    // Line 2: Contas Abertas (#E5E5E5)
     ctx.strokeStyle = '#E5E5E5';
     ctx.lineWidth = 2.2;
     ctx.beginPath();
@@ -738,7 +752,7 @@ export const SiscomDashboardView: React.FC = () => {
         ctx.fillStyle = '#E5E5E5';
         ctx.font = '700 10px Inter, system-ui, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(String(p.val), p.x, p.y + 14);
+        ctx.fillText(String(p.val), p.x, p.y - 8);
       }
     });
 
@@ -747,19 +761,19 @@ export const SiscomDashboardView: React.FC = () => {
     const legY = chartBoxY + chartBoxH - 14;
     ctx.fillStyle = '#FACC15';
     ctx.beginPath();
-    ctx.arc(width / 2 - 130, legY - 4, 4, 0, Math.PI * 2);
+    ctx.arc(width / 2 - 140, legY - 4, 4, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#D4D4D4';
     ctx.font = '600 11px Inter, system-ui, sans-serif';
-    ctx.fillText('Leads Indicados', width / 2 - 120, legY);
+    ctx.fillText('Leads Indicados (Eixo Esq.)', width / 2 - 130, legY);
 
     ctx.fillStyle = '#E5E5E5';
     ctx.beginPath();
-    ctx.arc(width / 2 + 15, legY - 4, 4, 0, Math.PI * 2);
+    ctx.arc(width / 2 + 30, legY - 4, 4, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#D4D4D4';
     ctx.font = '600 11px Inter, system-ui, sans-serif';
-    ctx.fillText('Contas Abertas', width / 2 + 25, legY);
+    ctx.fillText('Contas Abertas (Eixo Dir.)', width / 2 + 40, legY);
 
     return canvas;
   };
@@ -813,7 +827,7 @@ export const SiscomDashboardView: React.FC = () => {
               Dashboard Siscom
             </h1>
             <p className="text-[11px] text-slate-400 font-medium">
-              Resultado diário & comparativo de 7 dias
+              Resultado diário & evolução de 7 dias
             </p>
           </div>
 
@@ -903,12 +917,12 @@ export const SiscomDashboardView: React.FC = () => {
       {/* Main Content Layout */}
       <div
         className={`grid grid-cols-1 ${
-          isPrintMode ? 'lg:grid-cols-1 max-w-4xl mx-auto' : 'xl:grid-cols-12'
+          isPrintMode ? 'lg:grid-cols-1 max-w-5xl mx-auto' : 'xl:grid-cols-12'
         } gap-6 items-start`}
       >
         {/* LEFT COLUMN: Daily Data Entry & Chart Controls (Hidden in Print Mode) */}
         {!isPrintMode && (
-          <div className="xl:col-span-5 space-y-4">
+          <div className="xl:col-span-4 space-y-4">
             <form
               onSubmit={handleSaveRecord}
               className="p-5 rounded-2xl bg-[#101010] border border-[#222222] space-y-4"
@@ -1076,7 +1090,7 @@ export const SiscomDashboardView: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[11px] font-medium text-slate-400 mb-1">
-                      % Produtividade do Mailing
+                      % Produtividade
                     </label>
                     <input
                       type="number"
@@ -1106,7 +1120,7 @@ export const SiscomDashboardView: React.FC = () => {
                 </div>
               </div>
 
-              {/* Chart Visual Controls (Moved here from the print area) */}
+              {/* Chart Visual Controls */}
               <div className="p-3 rounded-xl bg-[#161616] border border-[#222222] flex items-center justify-between gap-2">
                 <span className="text-[11px] font-bold text-slate-400">Opções do Gráfico:</span>
                 <div className="flex items-center gap-2">
@@ -1132,7 +1146,7 @@ export const SiscomDashboardView: React.FC = () => {
                         : 'bg-[#101010] text-slate-400 border-[#222222]'
                     }`}
                   >
-                    {useDualAxis ? 'Eixo Duplo' : 'Escala Única'}
+                    {useDualAxis ? 'Eixo Proporcional' : 'Escala Única'}
                   </button>
                 </div>
               </div>
@@ -1237,7 +1251,7 @@ export const SiscomDashboardView: React.FC = () => {
         )}
 
         {/* RIGHT COLUMN: Clean Neutral Dashboard Card (Screenshot Ready) */}
-        <div className={`${isPrintMode ? 'col-span-1' : 'xl:col-span-7'}`}>
+        <div className={`${isPrintMode ? 'col-span-1' : 'xl:col-span-8'}`}>
           <div
             ref={captureCardRef}
             className="p-6 rounded-2xl bg-[#101010] border border-[#222222] space-y-5"
@@ -1262,33 +1276,33 @@ export const SiscomDashboardView: React.FC = () => {
               </div>
             </div>
 
-            {/* 3 Compact Neutral KPI Blocks: TRANSFERÊNCIAS | PRODUÇÃO | MAILING */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5">
-              {/* 1. TRANSFERÊNCIAS */}
-              <div className="md:col-span-4 p-4 rounded-xl bg-[#161616] border border-[#222222] space-y-3">
+            {/* 3 Balanced KPI Blocks in 2 : 3 : 2 proportion (7 equal metric columns) */}
+            <div className="grid grid-cols-1 lg:grid-cols-7 gap-3">
+              {/* 1. TRANSFERÊNCIAS (2/7 width) */}
+              <div className="lg:col-span-2 p-4 rounded-xl bg-[#161616] border border-[#222222] space-y-3">
                 <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 block">
                   Transferências
                 </span>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-medium block">
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="min-w-0">
+                    <span className="text-[11px] text-slate-400 font-medium block truncate">
                       {activeRange.isSingleDay ? 'Total do Dia' : 'Total Período'}
                     </span>
-                    <div className="flex items-baseline gap-1.5 mt-1 flex-wrap">
-                      <span className="text-2xl font-black text-white tracking-tight">
+                    <div className="flex items-center gap-1.5 mt-1.5 whitespace-nowrap">
+                      <span className="text-xl font-black text-white tracking-tight leading-none">
                         {displayedMetrics.totalTransferencias.toLocaleString('pt-BR')}
                       </span>
                       <MinimalDeltaBadge delta={deltas.transferencias} />
                     </div>
                   </div>
 
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-medium block">
+                  <div className="min-w-0">
+                    <span className="text-[11px] text-slate-400 font-medium block truncate">
                       Média / Hora
                     </span>
-                    <div className="flex items-baseline gap-1.5 mt-1 flex-wrap">
-                      <span className="text-2xl font-black text-white tracking-tight">
+                    <div className="flex items-center gap-1.5 mt-1.5 whitespace-nowrap">
+                      <span className="text-xl font-black text-white tracking-tight leading-none">
                         {displayedMetrics.mediaHora.toFixed(1).replace('.', ',')}
                       </span>
                       <MinimalDeltaBadge delta={deltas.mediaHora} />
@@ -1297,43 +1311,43 @@ export const SiscomDashboardView: React.FC = () => {
                 </div>
               </div>
 
-              {/* 2. PRODUÇÃO */}
-              <div className="md:col-span-5 p-4 rounded-xl bg-[#161616] border border-[#222222] space-y-3">
+              {/* 2. PRODUÇÃO (3/7 width) */}
+              <div className="lg:col-span-3 p-4 rounded-xl bg-[#161616] border border-[#222222] space-y-3">
                 <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 block">
                   Produção
                 </span>
 
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
+                <div className="grid grid-cols-3 gap-2.5">
+                  <div className="min-w-0">
                     <span className="text-[11px] text-slate-400 font-medium block truncate">
-                      Leads Indic.
+                      Leads Indicados
                     </span>
-                    <div className="flex items-baseline gap-1.5 mt-1 flex-wrap">
-                      <span className="text-2xl font-black text-white tracking-tight">
+                    <div className="flex items-center gap-1.5 mt-1.5 whitespace-nowrap">
+                      <span className="text-xl font-black text-white tracking-tight leading-none">
                         {displayedMetrics.leadsIndicados.toLocaleString('pt-BR')}
                       </span>
                       <MinimalDeltaBadge delta={deltas.leadsIndicados} />
                     </div>
                   </div>
 
-                  <div>
+                  <div className="min-w-0">
                     <span className="text-[11px] text-slate-400 font-medium block truncate">
                       Contas Abertas
                     </span>
-                    <div className="flex items-baseline gap-1.5 mt-1 flex-wrap">
-                      <span className="text-2xl font-black text-white tracking-tight">
+                    <div className="flex items-center gap-1.5 mt-1.5 whitespace-nowrap">
+                      <span className="text-xl font-black text-white tracking-tight leading-none">
                         {displayedMetrics.contasAbertas.toLocaleString('pt-BR')}
                       </span>
                       <MinimalDeltaBadge delta={deltas.contasAbertas} />
                     </div>
                   </div>
 
-                  <div>
+                  <div className="min-w-0">
                     <span className="text-[11px] text-slate-400 font-medium block truncate">
                       % Conversão
                     </span>
-                    <div className="flex items-baseline gap-1.5 mt-1 flex-wrap">
-                      <span className="text-2xl font-black text-white tracking-tight">
+                    <div className="flex items-center gap-1.5 mt-1.5 whitespace-nowrap">
+                      <span className="text-xl font-black text-white tracking-tight leading-none">
                         {displayedMetrics.conversaoPct.toFixed(1).replace('.', ',')}%
                       </span>
                       <MinimalDeltaBadge delta={deltas.conversaoPct} />
@@ -1342,31 +1356,31 @@ export const SiscomDashboardView: React.FC = () => {
                 </div>
               </div>
 
-              {/* 3. MAILING */}
-              <div className="md:col-span-3 p-4 rounded-xl bg-[#161616] border border-[#222222] space-y-3">
+              {/* 3. MAILING (2/7 width) */}
+              <div className="lg:col-span-2 p-4 rounded-xl bg-[#161616] border border-[#222222] space-y-3">
                 <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 block">
                   Mailing
                 </span>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="min-w-0">
                     <span className="text-[11px] text-slate-400 font-medium block truncate">
-                      % Produtiv.
+                      % Produtividade
                     </span>
-                    <div className="flex items-baseline gap-1.5 mt-1 flex-wrap">
-                      <span className="text-2xl font-black text-white tracking-tight">
+                    <div className="flex items-center gap-1.5 mt-1.5 whitespace-nowrap">
+                      <span className="text-xl font-black text-white tracking-tight leading-none">
                         {displayedMetrics.produtividadeMailing.toFixed(1).replace('.', ',')}%
                       </span>
                       <MinimalDeltaBadge delta={deltas.produtividadeMailing} />
                     </div>
                   </div>
 
-                  <div>
+                  <div className="min-w-0">
                     <span className="text-[11px] text-slate-400 font-medium block truncate">
                       % Atritados
                     </span>
-                    <div className="flex items-baseline gap-1.5 mt-1 flex-wrap">
-                      <span className="text-2xl font-black text-white tracking-tight">
+                    <div className="flex items-center gap-1.5 mt-1.5 whitespace-nowrap">
+                      <span className="text-xl font-black text-white tracking-tight leading-none">
                         {displayedMetrics.atritados.toFixed(1).replace('.', ',')}%
                       </span>
                       <MinimalDeltaBadge
@@ -1379,19 +1393,19 @@ export const SiscomDashboardView: React.FC = () => {
               </div>
             </div>
 
-            {/* 7-Day Comparative Chart Section */}
+            {/* 7-Day Comparative Evolution Chart Section */}
             <div className="p-5 rounded-xl bg-[#161616] border border-[#222222] space-y-3">
               <div>
                 <h3 className="text-xs font-extrabold text-slate-300 tracking-wider uppercase">
-                  Comparativo Últimos 7 Dias — Leads Indicados vs. Contas Abertas
+                  Evolução Últimos 7 Dias — Leads Indicados vs. Contas Abertas
                 </h3>
               </div>
 
-              <div className="h-56 w-full pt-2">
+              <div className="h-60 w-full pt-2">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={chart7DaysSeries}
-                    margin={{ top: 18, right: 20, left: -16, bottom: 4 }}
+                    margin={{ top: 22, right: 12, left: -16, bottom: 4 }}
                   >
                     <CartesianGrid stroke="#222222" strokeDasharray="0" vertical={false} />
                     <XAxis
@@ -1407,15 +1421,17 @@ export const SiscomDashboardView: React.FC = () => {
                       tickLine={false}
                       axisLine={false}
                       tick={{ fontSize: 11, fill: '#737373' }}
+                      domain={[0, (dataMax: number) => Math.max(10, Math.ceil(dataMax * 1.2))]}
                     />
                     {useDualAxis && (
                       <YAxis
                         yAxisId="right"
                         orientation="right"
-                        stroke="#737373"
+                        stroke="#525252"
                         tickLine={false}
                         axisLine={false}
                         tick={{ fontSize: 11, fill: '#737373' }}
+                        domain={[0, (dataMax: number) => Math.max(4, Math.ceil(dataMax * 1.35))]}
                       />
                     )}
                     <Tooltip
@@ -1473,7 +1489,7 @@ export const SiscomDashboardView: React.FC = () => {
                       {showPointLabels && (
                         <LabelList
                           dataKey="contasAbertas"
-                          position="bottom"
+                          position="top"
                           offset={8}
                           style={{ fill: '#E5E5E5', fontSize: 10, fontWeight: 700 }}
                         />
@@ -1487,12 +1503,16 @@ export const SiscomDashboardView: React.FC = () => {
               <div className="flex items-center justify-center gap-8 pt-2 border-t border-[#222222] text-xs">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-[#FACC15] inline-block" />
-                  <span className="font-semibold text-slate-300">Leads Indicados</span>
+                  <span className="font-semibold text-slate-300">
+                    Leads Indicados {useDualAxis && <span className="text-slate-500 font-normal">(Eixo Esq.)</span>}
+                  </span>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-neutral-200 inline-block" />
-                  <span className="font-semibold text-slate-300">Contas Abertas</span>
+                  <span className="font-semibold text-slate-300">
+                    Contas Abertas {useDualAxis && <span className="text-slate-500 font-normal">(Eixo Dir.)</span>}
+                  </span>
                 </div>
               </div>
             </div>
@@ -1504,7 +1524,7 @@ export const SiscomDashboardView: React.FC = () => {
 };
 
 /**
- * Minimalist % Delta Indicator (no box background, just clean arrow + percentage)
+ * Compact Pill Badge for % Delta Indicator (fits inline beside the number without wrapping)
  */
 const MinimalDeltaBadge: React.FC<{
   delta: number | null;
@@ -1512,8 +1532,8 @@ const MinimalDeltaBadge: React.FC<{
 }> = ({ delta, invertColor = false }) => {
   if (delta === null || isNaN(delta)) {
     return (
-      <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-600">
-        <Minus className="w-3 h-3" /> 0%
+      <span className="inline-flex items-center gap-0.5 text-[9.5px] font-bold leading-none px-1.5 py-1 rounded-md bg-[#1F1F1F] text-slate-500 border border-[#2A2A2A]">
+        <Minus className="w-2.5 h-2.5" /> 0%
       </span>
     );
   }
@@ -1524,25 +1544,32 @@ const MinimalDeltaBadge: React.FC<{
 
   if (isNeutral) {
     return (
-      <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-500">
-        <Minus className="w-3 h-3" /> 0,0%
+      <span className="inline-flex items-center gap-0.5 text-[9.5px] font-bold leading-none px-1.5 py-1 rounded-md bg-[#1F1F1F] text-slate-400 border border-[#2A2A2A]">
+        <Minus className="w-2.5 h-2.5" /> 0%
       </span>
     );
   }
 
+  const formattedPct =
+    Math.abs(delta) >= 99.95
+      ? `${Math.round(Math.abs(delta))}%`
+      : `${Math.abs(delta).toFixed(1).replace('.', ',')}%`;
+
   return (
     <span
-      className={`inline-flex items-center gap-0.5 text-[11px] font-bold ${
-        isPositiveOutcome ? 'text-emerald-400' : 'text-rose-400'
+      className={`inline-flex items-center gap-0.5 text-[9.5px] font-bold leading-none px-1.5 py-1 rounded-md border ${
+        isPositiveOutcome
+          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+          : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
       }`}
       title={`${isUp ? 'Acima' : 'Abaixo'} da média histórica`}
     >
       {isUp ? (
-        <ArrowUpRight className="w-3 h-3 flex-shrink-0" />
+        <ArrowUpRight className="w-2.5 h-2.5 flex-shrink-0" />
       ) : (
-        <ArrowDownRight className="w-3 h-3 flex-shrink-0" />
+        <ArrowDownRight className="w-2.5 h-2.5 flex-shrink-0" />
       )}
-      <span>{Math.abs(delta).toFixed(1).replace('.', ',')}%</span>
+      <span>{formattedPct}</span>
     </span>
   );
 };

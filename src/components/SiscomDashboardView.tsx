@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  Calendar,
   ChevronLeft,
   ChevronRight,
   Download,
@@ -8,20 +7,11 @@ import {
   Check,
   Save,
   Trash2,
-  TrendingUp,
   ArrowUpRight,
   ArrowDownRight,
   Minus,
-  SlidersHorizontal,
   Maximize2,
   Minimize2,
-  Clock,
-  Users,
-  Mail,
-  ArrowRightLeft,
-  History,
-  Sparkles,
-  RefreshCw,
   Eye,
   EyeOff
 } from 'lucide-react';
@@ -76,7 +66,7 @@ export const SiscomDashboardView: React.FC = () => {
   const [produtividadeMailing, setProdutividadeMailing] = useState<string>('');
   const [atritados, setAtritados] = useState<string>('');
 
-  // UI & Chart Options
+  // UI & Chart Options (Controlled from the Left Control Panel)
   const [isPrintMode, setIsPrintMode] = useState<boolean>(false);
   const [useDualAxis, setUseDualAxis] = useState<boolean>(false);
   const [showPointLabels, setShowPointLabels] = useState<boolean>(true);
@@ -103,12 +93,14 @@ export const SiscomDashboardView: React.FC = () => {
     };
   }, []);
 
-  // Populate form inputs whenever selectedDate changes (or when store first loads for that date)
+  // Populate form inputs whenever selectedDate changes
   useEffect(() => {
     const existing = store.records[selectedDate];
     if (existing) {
       setHorasRodadas(existing.horasRodadas > 0 ? String(existing.horasRodadas) : '');
-      setTotalTransferencias(existing.totalTransferencias > 0 ? String(existing.totalTransferencias) : '');
+      setTotalTransferencias(
+        existing.totalTransferencias > 0 ? String(existing.totalTransferencias) : ''
+      );
       setLeadsIndicados(existing.leadsIndicados > 0 ? String(existing.leadsIndicados) : '');
       setContasAbertas(existing.contasAbertas > 0 ? String(existing.contasAbertas) : '');
       setProdutividadeMailing(
@@ -133,7 +125,7 @@ export const SiscomDashboardView: React.FC = () => {
   const numProdMailing = parseFloat(produtividadeMailing.replace(',', '.')) || 0;
   const numAtritados = parseFloat(atritados.replace(',', '.')) || 0;
 
-  // Live preview record merges current form state onto selectedDate so the user sees instant updates
+  // Live preview record merges current form state onto selectedDate
   const effectiveRecordsMap = useMemo(() => {
     const hasFormInput =
       numHoras > 0 ||
@@ -229,9 +221,7 @@ export const SiscomDashboardView: React.FC = () => {
   const selectPresetFilter = (mode: FilterMode) => {
     setFilterMode(mode);
     const today = new Date();
-    if (mode === 'dia') {
-      // Uses selectedDate
-    } else if (mode === 'ontem') {
+    if (mode === 'ontem') {
       const yest = new Date(today);
       yest.setDate(yest.getDate() - 1);
       const yestStr = formatDateToYYYYMMDD(yest);
@@ -249,7 +239,7 @@ export const SiscomDashboardView: React.FC = () => {
     }
   };
 
-  // Determine active date range for Dashboard display
+  // Active date range for Dashboard display
   const activeRange = useMemo(() => {
     if (filterMode === 'dia' || filterMode === 'ontem') {
       return { start: selectedDate, end: selectedDate, isSingleDay: true };
@@ -294,7 +284,6 @@ export const SiscomDashboardView: React.FC = () => {
       };
     }
 
-    // Period aggregation (Acumulado / Período)
     const matchingRecords = Object.values(effectiveRecordsMap).filter(
       r =>
         r.date >= activeRange.start &&
@@ -330,7 +319,6 @@ export const SiscomDashboardView: React.FC = () => {
     const sumProd = matchingRecords.reduce((s, r) => s + r.produtividadeMailing, 0);
     const sumAtrit = matchingRecords.reduce((s, r) => s + r.atritados, 0);
 
-    // Media Hora in period: total transferencias / total horas (or avg of daily mediaHora)
     const daysWithHours = matchingRecords.filter(r => r.horasRodadas > 0);
     const periodMediaHora =
       sumHoras > 0
@@ -356,7 +344,6 @@ export const SiscomDashboardView: React.FC = () => {
   }, [activeRange, effectiveRecordsMap]);
 
   // Deltas (% above or below system average)
-  // When viewing a period, we compare the period's daily average against the system historical daily average
   const deltas = useMemo(() => {
     return {
       transferencias: calcDeltaPct(
@@ -400,18 +387,17 @@ export const SiscomDashboardView: React.FC = () => {
       .sort((a, b) => (a.date < b.date ? 1 : -1));
   }, [store.records]);
 
-  // Render High-Resolution PNG Canvas directly from data (pixel-perfect for WhatsApp)
+  // Render Clean Neutral PNG Canvas directly from data
   const generateDashboardCanvas = (): HTMLCanvasElement => {
-    const scale = 2; // Retina 2x resolution
+    const scale = 2;
     const width = 880;
-    const height = 620;
+    const height = 560;
     const canvas = document.createElement('canvas');
     canvas.width = width * scale;
     canvas.height = height * scale;
     const ctx = canvas.getContext('2d')!;
     ctx.scale(scale, scale);
 
-    // Helper for rounded rects
     const roundRect = (x: number, y: number, w: number, h: number, r: number) => {
       ctx.beginPath();
       ctx.moveTo(x + r, y);
@@ -426,83 +412,75 @@ export const SiscomDashboardView: React.FC = () => {
       ctx.closePath();
     };
 
-    // Background
-    ctx.fillStyle = '#0B0B0E';
+    // Pure Demands Dark Background (#0A0A0A / #101010)
+    ctx.fillStyle = '#0A0A0A';
     ctx.fillRect(0, 0, width, height);
 
-    // Outer Card Border
-    roundRect(16, 16, width - 32, height - 32, 20);
-    ctx.fillStyle = '#111115';
+    roundRect(16, 16, width - 32, height - 32, 16);
+    ctx.fillStyle = '#101010';
     ctx.fill();
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = '#25252D';
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#222222';
     ctx.stroke();
 
-    // Header Bar
-    ctx.fillStyle = '#FACC15';
-    roundRect(36, 36, 6, 34, 3);
-    ctx.fill();
-
+    // Header
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = '900 20px Inter, system-ui, sans-serif';
-    ctx.fillText('DASHBOARD SISCOM', 52, 53);
+    ctx.font = '900 18px Inter, system-ui, sans-serif';
+    ctx.fillText('DASHBOARD SISCOM', 36, 50);
 
-    ctx.fillStyle = '#94A3B8';
-    ctx.font = '600 11px Inter, system-ui, sans-serif';
-    ctx.fillText('RESULTADO OPERACIONAL & DESEMPENHO DIÁRIO', 52, 69);
+    ctx.fillStyle = '#737373';
+    ctx.font = '500 11px Inter, system-ui, sans-serif';
+    ctx.fillText('Comparativo vs. média histórica', 36, 67);
 
     // Date Badge on Right
     const periodLabel = activeRange.isSingleDay
-      ? `DATA: ${formatBRDate(activeRange.start)}`
-      : `PERÍODO: ${formatBRDate(activeRange.start)} A ${formatBRDate(activeRange.end)}`;
-    ctx.font = '800 12px Inter, system-ui, sans-serif';
-    const badgeW = ctx.measureText(periodLabel).width + 28;
-    roundRect(width - 36 - badgeW, 38, badgeW, 30, 10);
-    ctx.fillStyle = '#1A1A22';
+      ? formatBRDate(activeRange.start)
+      : `${formatBRDate(activeRange.start)} a ${formatBRDate(activeRange.end)}`;
+    ctx.font = '700 12px Inter, system-ui, sans-serif';
+    const badgeW = ctx.measureText(periodLabel).width + 24;
+    roundRect(width - 36 - badgeW, 38, badgeW, 28, 8);
+    ctx.fillStyle = '#161616';
     ctx.fill();
-    ctx.strokeStyle = '#FACC1566';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#262626';
     ctx.stroke();
 
-    ctx.fillStyle = '#FACC15';
-    ctx.fillText(periodLabel, width - 36 - badgeW + 14, 57);
+    ctx.fillStyle = '#E5E5E5';
+    ctx.fillText(periodLabel, width - 36 - badgeW + 12, 56);
 
-    // Helper to draw Delta Badge next to value
-    const drawDelta = (
-      x: number,
-      y: number,
-      delta: number | null,
-      invertColor = false
-    ) => {
-      if (delta === null || isNaN(delta)) return;
+    // Header Divider
+    ctx.strokeStyle = '#1F1F1F';
+    ctx.beginPath();
+    ctx.moveTo(36, 82);
+    ctx.lineTo(width - 36, 82);
+    ctx.stroke();
+
+    // Helper for minimalist delta text (arrow + %)
+    const drawDelta = (x: number, y: number, delta: number | null, invertColor = false) => {
+      if (delta === null || isNaN(delta)) {
+        ctx.font = '700 11px Inter, system-ui, sans-serif';
+        ctx.fillStyle = '#525252';
+        ctx.fillText('— 0%', x, y);
+        return;
+      }
       const isZero = Math.abs(delta) < 0.05;
       const isUp = delta > 0;
       const isGood = invertColor ? !isUp : isUp;
 
-      const arrow = isZero ? '•' : isUp ? '↑' : '↓';
+      const arrow = isZero ? '—' : isUp ? '↑' : '↓';
       const txt = `${arrow} ${Math.abs(delta).toFixed(1).replace('.', ',')}%`;
 
-      ctx.font = '800 11px Inter, system-ui, sans-serif';
-      const tw = ctx.measureText(txt).width + 12;
-      roundRect(x, y - 13, tw, 18, 6);
-      ctx.fillStyle = isZero
-        ? 'rgba(148,163,184,0.12)'
-        : isGood
-        ? 'rgba(16,185,129,0.14)'
-        : 'rgba(244,63,94,0.14)';
-      ctx.fill();
-
-      ctx.fillStyle = isZero ? '#94A3B8' : isGood ? '#34D399' : '#FB7185';
-      ctx.fillText(txt, x + 6, y);
+      ctx.font = '700 11px Inter, system-ui, sans-serif';
+      ctx.fillStyle = isZero ? '#737373' : isGood ? '#34D399' : '#F87171';
+      ctx.fillText(txt, x, y);
     };
 
     // 3 Section Blocks (TRANSFERÊNCIAS | PRODUÇÃO | MAILING)
-    const topY = 86;
-    const boxH = 152;
-    const gap = 14;
+    const topY = 96;
+    const boxH = 114;
+    const gap = 12;
     const totalInnerW = width - 72;
     const col1W = Math.floor(totalInnerW * 0.30);
-    const col2W = Math.floor(totalInnerW * 0.40);
+    const col2W = Math.floor(totalInnerW * 0.42);
     const col3W = totalInnerW - col1W - col2W - gap * 2;
 
     const col1X = 36;
@@ -510,171 +488,149 @@ export const SiscomDashboardView: React.FC = () => {
     const col3X = col2X + col2W + gap;
 
     // --- BLOCK 1: TRANSFERÊNCIAS ---
-    roundRect(col1X, topY, col1W, boxH, 14);
-    ctx.fillStyle = '#16161C';
+    roundRect(col1X, topY, col1W, boxH, 12);
+    ctx.fillStyle = '#161616';
     ctx.fill();
-    ctx.strokeStyle = '#262630';
+    ctx.strokeStyle = '#222222';
     ctx.stroke();
 
-    ctx.fillStyle = '#38BDF8';
-    ctx.font = '800 11px Inter, system-ui, sans-serif';
+    ctx.fillStyle = '#737373';
+    ctx.font = '800 10px Inter, system-ui, sans-serif';
     ctx.fillText('TRANSFERÊNCIAS', col1X + 16, topY + 24);
 
-    // Metric 1.1: Total do dia
-    const m1Y = topY + 52;
-    ctx.fillStyle = '#94A3B8';
-    ctx.font = '600 11px Inter, system-ui, sans-serif';
-    ctx.fillText(activeRange.isSingleDay ? 'Total do Dia' : 'Total do Período', col1X + 16, m1Y);
+    const mY = topY + 48;
+    // Total do Dia
+    ctx.fillStyle = '#A3A3A3';
+    ctx.font = '500 11px Inter, system-ui, sans-serif';
+    ctx.fillText(activeRange.isSingleDay ? 'Total do Dia' : 'Total Período', col1X + 16, mY);
 
     const valTransfStr = displayedMetrics.totalTransferencias.toLocaleString('pt-BR');
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = '900 24px Inter, system-ui, sans-serif';
-    ctx.fillText(valTransfStr, col1X + 16, m1Y + 26);
+    ctx.font = '800 22px Inter, system-ui, sans-serif';
+    ctx.fillText(valTransfStr, col1X + 16, mY + 26);
     const wTransf = ctx.measureText(valTransfStr).width;
-    drawDelta(col1X + 16 + wTransf + 8, m1Y + 22, deltas.transferencias);
+    drawDelta(col1X + 16 + wTransf + 6, mY + 23, deltas.transferencias);
 
-    // Metric 1.2: Média Hora
-    const m2Y = topY + 52;
-    const col1MidX = col1X + Math.floor(col1W * 0.54);
-    ctx.fillStyle = '#94A3B8';
-    ctx.font = '600 11px Inter, system-ui, sans-serif';
-    ctx.fillText('Média / Hora', col1MidX, m2Y);
+    // Média / Hora
+    const col1MidX = col1X + Math.floor(col1W * 0.53);
+    ctx.fillStyle = '#A3A3A3';
+    ctx.font = '500 11px Inter, system-ui, sans-serif';
+    ctx.fillText('Média / Hora', col1MidX, mY);
 
     const valMediaHStr = displayedMetrics.mediaHora.toFixed(1).replace('.', ',');
-    ctx.fillStyle = '#38BDF8';
-    ctx.font = '900 24px Inter, system-ui, sans-serif';
-    ctx.fillText(valMediaHStr, col1MidX, m2Y + 26);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '800 22px Inter, system-ui, sans-serif';
+    ctx.fillText(valMediaHStr, col1MidX, mY + 26);
     const wMediaH = ctx.measureText(valMediaHStr).width;
-    drawDelta(col1MidX + wMediaH + 6, m2Y + 22, deltas.mediaHora);
-
-    // System average footer
-    ctx.fillStyle = '#64748B';
-    ctx.font = '500 10px Inter, system-ui, sans-serif';
-    ctx.fillText(
-      `Média sist.: ${Math.round(systemAverages.avgTotalTransferencias).toLocaleString('pt-BR')}/dia • ${systemAverages.avgMediaHora.toFixed(1).replace('.', ',')}/h`,
-      col1X + 16,
-      topY + boxH - 16
-    );
+    drawDelta(col1MidX + wMediaH + 6, mY + 23, deltas.mediaHora);
 
     // --- BLOCK 2: PRODUÇÃO ---
-    roundRect(col2X, topY, col2W, boxH, 14);
-    ctx.fillStyle = '#16161C';
+    roundRect(col2X, topY, col2W, boxH, 12);
+    ctx.fillStyle = '#161616';
     ctx.fill();
-    ctx.strokeStyle = '#262630';
+    ctx.strokeStyle = '#222222';
     ctx.stroke();
 
-    ctx.fillStyle = '#FACC15';
-    ctx.font = '800 11px Inter, system-ui, sans-serif';
+    ctx.fillStyle = '#737373';
+    ctx.font = '800 10px Inter, system-ui, sans-serif';
     ctx.fillText('PRODUÇÃO', col2X + 16, topY + 24);
 
     const pSubW = Math.floor((col2W - 32) / 3);
-    // 2.1 Leads Indicados
-    ctx.fillStyle = '#94A3B8';
-    ctx.font = '600 11px Inter, system-ui, sans-serif';
-    ctx.fillText('Leads Indicados', col2X + 16, m1Y);
+    // Leads Indicados
+    ctx.fillStyle = '#A3A3A3';
+    ctx.font = '500 11px Inter, system-ui, sans-serif';
+    ctx.fillText('Leads Indicados', col2X + 16, mY);
 
     const valLeadsStr = displayedMetrics.leadsIndicados.toLocaleString('pt-BR');
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = '900 22px Inter, system-ui, sans-serif';
-    ctx.fillText(valLeadsStr, col2X + 16, m1Y + 25);
-    drawDelta(col2X + 16, m1Y + 46, deltas.leadsIndicados);
+    ctx.font = '800 22px Inter, system-ui, sans-serif';
+    ctx.fillText(valLeadsStr, col2X + 16, mY + 26);
+    const wLeads = ctx.measureText(valLeadsStr).width;
+    drawDelta(col2X + 16 + wLeads + 6, mY + 23, deltas.leadsIndicados);
 
-    // 2.2 Contas Abertas
+    // Contas Abertas
     const p2X = col2X + 16 + pSubW;
-    ctx.fillStyle = '#94A3B8';
-    ctx.font = '600 11px Inter, system-ui, sans-serif';
-    ctx.fillText('Contas Abertas', p2X, m1Y);
+    ctx.fillStyle = '#A3A3A3';
+    ctx.font = '500 11px Inter, system-ui, sans-serif';
+    ctx.fillText('Contas Abertas', p2X, mY);
 
     const valContasStr = displayedMetrics.contasAbertas.toLocaleString('pt-BR');
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = '900 22px Inter, system-ui, sans-serif';
-    ctx.fillText(valContasStr, p2X, m1Y + 25);
-    drawDelta(p2X, m1Y + 46, deltas.contasAbertas);
+    ctx.font = '800 22px Inter, system-ui, sans-serif';
+    ctx.fillText(valContasStr, p2X, mY + 26);
+    const wContas = ctx.measureText(valContasStr).width;
+    drawDelta(p2X + wContas + 6, mY + 23, deltas.contasAbertas);
 
-    // 2.3 % Conversão
+    // % Conversão
     const p3X = col2X + 16 + pSubW * 2;
-    ctx.fillStyle = '#94A3B8';
-    ctx.font = '600 11px Inter, system-ui, sans-serif';
-    ctx.fillText('% Conversão', p3X, m1Y);
+    ctx.fillStyle = '#A3A3A3';
+    ctx.font = '500 11px Inter, system-ui, sans-serif';
+    ctx.fillText('% Conversão', p3X, mY);
 
     const valConvStr = `${displayedMetrics.conversaoPct.toFixed(1).replace('.', ',')}%`;
-    ctx.fillStyle = '#4ADE80';
-    ctx.font = '900 22px Inter, system-ui, sans-serif';
-    ctx.fillText(valConvStr, p3X, m1Y + 25);
-    drawDelta(p3X, m1Y + 46, deltas.conversaoPct);
-
-    ctx.fillStyle = '#64748B';
-    ctx.font = '500 10px Inter, system-ui, sans-serif';
-    ctx.fillText(
-      `Média sist.: Leads ${Math.round(systemAverages.avgLeadsIndicados)} • Contas ${Math.round(systemAverages.avgContasAbertas)} • Conv. ${systemAverages.avgConversaoPct.toFixed(1).replace('.', ',')}%`,
-      col2X + 16,
-      topY + boxH - 16
-    );
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '800 22px Inter, system-ui, sans-serif';
+    ctx.fillText(valConvStr, p3X, mY + 26);
+    const wConv = ctx.measureText(valConvStr).width;
+    drawDelta(p3X + wConv + 6, mY + 23, deltas.conversaoPct);
 
     // --- BLOCK 3: MAILING ---
-    roundRect(col3X, topY, col3W, boxH, 14);
-    ctx.fillStyle = '#16161C';
+    roundRect(col3X, topY, col3W, boxH, 12);
+    ctx.fillStyle = '#161616';
     ctx.fill();
-    ctx.strokeStyle = '#262630';
+    ctx.strokeStyle = '#222222';
     ctx.stroke();
 
-    ctx.fillStyle = '#A855F7';
-    ctx.font = '800 11px Inter, system-ui, sans-serif';
+    ctx.fillStyle = '#737373';
+    ctx.font = '800 10px Inter, system-ui, sans-serif';
     ctx.fillText('MAILING', col3X + 16, topY + 24);
 
-    // 3.1 % Produtividade
-    ctx.fillStyle = '#94A3B8';
-    ctx.font = '600 11px Inter, system-ui, sans-serif';
-    ctx.fillText('% Produtividade', col3X + 16, m1Y);
+    // % Produtividade
+    ctx.fillStyle = '#A3A3A3';
+    ctx.font = '500 11px Inter, system-ui, sans-serif';
+    ctx.fillText('% Produtividade', col3X + 16, mY);
 
     const valProdStr = `${displayedMetrics.produtividadeMailing.toFixed(1).replace('.', ',')}%`;
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = '900 22px Inter, system-ui, sans-serif';
-    ctx.fillText(valProdStr, col3X + 16, m1Y + 25);
-    drawDelta(col3X + 16, m1Y + 46, deltas.produtividadeMailing);
+    ctx.font = '800 22px Inter, system-ui, sans-serif';
+    ctx.fillText(valProdStr, col3X + 16, mY + 26);
+    const wProd = ctx.measureText(valProdStr).width;
+    drawDelta(col3X + 16 + wProd + 6, mY + 23, deltas.produtividadeMailing);
 
-    // 3.2 % Atritados
-    const m3MidX = col3X + Math.floor(col3W * 0.54);
-    ctx.fillStyle = '#94A3B8';
-    ctx.font = '600 11px Inter, system-ui, sans-serif';
-    ctx.fillText('% Atritados', m3MidX, m1Y);
+    // % Atritados
+    const m3MidX = col3X + Math.floor(col3W * 0.53);
+    ctx.fillStyle = '#A3A3A3';
+    ctx.font = '500 11px Inter, system-ui, sans-serif';
+    ctx.fillText('% Atritados', m3MidX, mY);
 
     const valAtritStr = `${displayedMetrics.atritados.toFixed(1).replace('.', ',')}%`;
-    ctx.fillStyle = '#FB923C';
-    ctx.font = '900 22px Inter, system-ui, sans-serif';
-    ctx.fillText(valAtritStr, m3MidX, m1Y + 25);
-    drawDelta(m3MidX, m1Y + 46, deltas.atritados, invertAtritadosColor);
-
-    ctx.fillStyle = '#64748B';
-    ctx.font = '500 10px Inter, system-ui, sans-serif';
-    ctx.fillText(
-      `Média sist.: Prod. ${systemAverages.avgProdutividadeMailing.toFixed(1).replace('.', ',')}% • Atrit. ${systemAverages.avgAtritados.toFixed(1).replace('.', ',')}%`,
-      col3X + 16,
-      topY + boxH - 16
-    );
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '800 22px Inter, system-ui, sans-serif';
+    ctx.fillText(valAtritStr, m3MidX, mY + 26);
+    const wAtrit = ctx.measureText(valAtritStr).width;
+    drawDelta(m3MidX + wAtrit + 6, mY + 23, deltas.atritados, invertAtritadosColor);
 
     // --- CHART BOX (LAST 7 DAYS: LEADS INDICADOS VS CONTAS ABERTAS) ---
-    const chartBoxY = topY + boxH + 16;
-    const chartBoxH = height - chartBoxY - 36;
-    roundRect(36, chartBoxY, totalInnerW, chartBoxH, 14);
-    ctx.fillStyle = '#16161C';
+    const chartBoxY = topY + boxH + 14;
+    const chartBoxH = height - chartBoxY - 32;
+    roundRect(36, chartBoxY, totalInnerW, chartBoxH, 12);
+    ctx.fillStyle = '#161616';
     ctx.fill();
-    ctx.strokeStyle = '#262630';
+    ctx.strokeStyle = '#222222';
     ctx.stroke();
 
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = '800 13px Inter, system-ui, sans-serif';
+    ctx.fillStyle = '#D4D4D4';
+    ctx.font = '700 11px Inter, system-ui, sans-serif';
     ctx.fillText(
-      'COMPARATIVO ÚLTIMOS 7 DIAS — LEADS INDICADOS vs CONTAS ABERTAS',
-      54,
+      'COMPARATIVO ÚLTIMOS 7 DIAS — LEADS INDICADOS VS. CONTAS ABERTAS',
+      52,
       chartBoxY + 26
     );
 
-    // Plot Area
-    const plotLeft = 86;
-    const plotRight = width - 68;
-    const plotTop = chartBoxY + 52;
-    const plotBottom = chartBoxY + chartBoxH - 52;
+    const plotLeft = 80;
+    const plotRight = width - 64;
+    const plotTop = chartBoxY + 48;
+    const plotBottom = chartBoxY + chartBoxH - 48;
     const plotW = plotRight - plotLeft;
     const plotH = plotBottom - plotTop;
 
@@ -682,8 +638,7 @@ export const SiscomDashboardView: React.FC = () => {
     const maxContas = Math.max(5, ...chart7DaysSeries.map(d => d.contasAbertas));
     const globalMax = Math.ceil(Math.max(maxLeads, maxContas) * 1.15);
 
-    // Draw 4 horizontal gridlines
-    ctx.strokeStyle = '#262632';
+    ctx.strokeStyle = '#222222';
     ctx.lineWidth = 1;
     for (let i = 0; i <= 4; i++) {
       const y = plotBottom - (plotH * i) / 4;
@@ -693,8 +648,8 @@ export const SiscomDashboardView: React.FC = () => {
       ctx.stroke();
 
       const labelVal = Math.round(((useDualAxis ? maxLeads : globalMax) * i) / 4);
-      ctx.fillStyle = '#64748B';
-      ctx.font = '600 10px Inter, system-ui, sans-serif';
+      ctx.fillStyle = '#737373';
+      ctx.font = '500 10px Inter, system-ui, sans-serif';
       ctx.textAlign = 'right';
       ctx.fillText(String(labelVal), plotLeft - 10, y + 3);
     }
@@ -702,17 +657,16 @@ export const SiscomDashboardView: React.FC = () => {
 
     const stepX = plotW / Math.max(1, chart7DaysSeries.length - 1);
 
-    // Vertical reference line on last day (current day)
+    // Vertical reference line on last day
     const lastX = plotLeft + stepX * (chart7DaysSeries.length - 1);
-    ctx.strokeStyle = '#334155';
-    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = '#2E2E2E';
+    ctx.setLineDash([3, 3]);
     ctx.beginPath();
     ctx.moveTo(lastX, plotTop);
     ctx.lineTo(lastX, plotBottom);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Compute coordinates
     const leadsPts = chart7DaysSeries.map((pt, idx) => {
       const x = plotLeft + idx * stepX;
       const denom = useDualAxis ? Math.ceil(maxLeads * 1.15) : globalMax;
@@ -727,17 +681,16 @@ export const SiscomDashboardView: React.FC = () => {
       return { x, y, val: pt.contasAbertas, label: pt.shortLabel };
     });
 
-    // X-Axis Labels
     leadsPts.forEach(p => {
-      ctx.fillStyle = '#94A3B8';
-      ctx.font = '700 11px Inter, system-ui, sans-serif';
+      ctx.fillStyle = '#737373';
+      ctx.font = '600 11px Inter, system-ui, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(p.label, p.x, plotBottom + 18);
     });
 
-    // Draw Line 1: Leads Indicados (#84CC16 - Lime Green like reference image)
-    ctx.strokeStyle = '#84CC16';
-    ctx.lineWidth = 2.8;
+    // Line 1: Leads Indicados (#FACC15 - Brand Yellow)
+    ctx.strokeStyle = '#FACC15';
+    ctx.lineWidth = 2.2;
     ctx.beginPath();
     leadsPts.forEach((p, i) => {
       if (i === 0) ctx.moveTo(p.x, p.y);
@@ -745,9 +698,9 @@ export const SiscomDashboardView: React.FC = () => {
     });
     ctx.stroke();
 
-    // Draw Line 2: Contas Abertas (#38BDF8 - Cyan/White contrast)
-    ctx.strokeStyle = '#38BDF8';
-    ctx.lineWidth = 2.8;
+    // Line 2: Contas Abertas (#A3A3A3 - Clean Neutral Light Gray/White)
+    ctx.strokeStyle = '#E5E5E5';
+    ctx.lineWidth = 2.2;
     ctx.beginPath();
     contasPts.forEach((p, i) => {
       if (i === 0) ctx.moveTo(p.x, p.y);
@@ -755,62 +708,58 @@ export const SiscomDashboardView: React.FC = () => {
     });
     ctx.stroke();
 
-    // Dots & Labels for Leads
     leadsPts.forEach(p => {
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2);
-      ctx.fillStyle = '#84CC16';
+      ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#FACC15';
       ctx.fill();
       ctx.lineWidth = 1.5;
-      ctx.strokeStyle = '#111115';
+      ctx.strokeStyle = '#161616';
       ctx.stroke();
 
       if (showPointLabels) {
-        ctx.fillStyle = '#A3E635';
-        ctx.font = '800 10px Inter, system-ui, sans-serif';
+        ctx.fillStyle = '#FACC15';
+        ctx.font = '700 10px Inter, system-ui, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(String(p.val), p.x, p.y - 9);
+        ctx.fillText(String(p.val), p.x, p.y - 8);
       }
     });
 
-    // Dots & Labels for Contas
     contasPts.forEach(p => {
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2);
-      ctx.fillStyle = '#38BDF8';
+      ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#E5E5E5';
       ctx.fill();
       ctx.lineWidth = 1.5;
-      ctx.strokeStyle = '#111115';
+      ctx.strokeStyle = '#161616';
       ctx.stroke();
 
       if (showPointLabels) {
-        ctx.fillStyle = '#7DD3FC';
-        ctx.font = '800 10px Inter, system-ui, sans-serif';
+        ctx.fillStyle = '#E5E5E5';
+        ctx.font = '700 10px Inter, system-ui, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(String(p.val), p.x, p.y + 15);
+        ctx.fillText(String(p.val), p.x, p.y + 14);
       }
     });
 
     // Bottom Legend
     ctx.textAlign = 'left';
     const legY = chartBoxY + chartBoxH - 14;
-    // Legend 1
-    ctx.fillStyle = '#84CC16';
+    ctx.fillStyle = '#FACC15';
     ctx.beginPath();
-    ctx.arc(width / 2 - 140, legY - 4, 4.5, 0, Math.PI * 2);
+    ctx.arc(width / 2 - 130, legY - 4, 4, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#E2E8F0';
-    ctx.font = '700 11px Inter, system-ui, sans-serif';
-    ctx.fillText('Leads Indicados', width / 2 - 130, legY);
+    ctx.fillStyle = '#D4D4D4';
+    ctx.font = '600 11px Inter, system-ui, sans-serif';
+    ctx.fillText('Leads Indicados', width / 2 - 120, legY);
 
-    // Legend 2
-    ctx.fillStyle = '#38BDF8';
+    ctx.fillStyle = '#E5E5E5';
     ctx.beginPath();
-    ctx.arc(width / 2 + 10, legY - 4, 4.5, 0, Math.PI * 2);
+    ctx.arc(width / 2 + 15, legY - 4, 4, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#E2E8F0';
-    ctx.font = '700 11px Inter, system-ui, sans-serif';
-    ctx.fillText('Contas Abertas', width / 2 + 20, legY);
+    ctx.fillStyle = '#D4D4D4';
+    ctx.font = '600 11px Inter, system-ui, sans-serif';
+    ctx.fillText('Contas Abertas', width / 2 + 25, legY);
 
     return canvas;
   };
@@ -843,7 +792,6 @@ export const SiscomDashboardView: React.FC = () => {
           setCopiedImage(true);
           setTimeout(() => setCopiedImage(false), 2500);
         } catch (err) {
-          // Fallback: download if clipboard image API is restricted
           handleDownloadPNG();
         }
       }, 'image/png');
@@ -852,32 +800,25 @@ export const SiscomDashboardView: React.FC = () => {
     }
   };
 
-  // Live calculated values for the form preview
   const formMediaHora = calcMediaHora(numTransferencias, numHoras);
   const formConversaoPct = calcConversaoPct(numContas, numLeads);
 
   return (
     <div className="space-y-5">
       {/* Top Action & Period Filter Bar */}
-      <div className="p-4 rounded-2xl bg-[#101010] border border-[#222222] flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 shadow-xl">
-        {/* Left: Module Title & Quick Filter Presets */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          <div className="flex items-center gap-2.5 mr-2">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-[#FACC15] shadow-md">
-              <TrendingUp className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="text-base font-black text-white tracking-wide leading-tight">
-                Dashboard Siscom
-              </h1>
-              <p className="text-[11px] text-slate-400 font-medium">
-                Fechamento diário compacto & comparativo de 7 dias
-              </p>
-            </div>
+      <div className="p-4 rounded-2xl bg-[#101010] border border-[#222222] flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="mr-2">
+            <h1 className="text-base font-black text-white tracking-wide leading-tight">
+              Dashboard Siscom
+            </h1>
+            <p className="text-[11px] text-slate-400 font-medium">
+              Resultado diário & comparativo de 7 dias
+            </p>
           </div>
 
           {/* Period Preset Pills */}
-          <div className="flex items-center bg-[#161616] p-1 rounded-xl border border-[#242424]">
+          <div className="flex items-center bg-[#161616] p-1 rounded-xl border border-[#222222]">
             {[
               { id: 'dia', label: 'Dia Selecionado' },
               { id: 'ontem', label: 'Ontem' },
@@ -890,7 +831,7 @@ export const SiscomDashboardView: React.FC = () => {
                 onClick={() => selectPresetFilter(tab.id as FilterMode)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   filterMode === tab.id
-                    ? 'bg-[#FACC15] text-slate-950 shadow-sm'
+                    ? 'bg-[#FACC15] text-slate-950'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -899,9 +840,8 @@ export const SiscomDashboardView: React.FC = () => {
             ))}
           </div>
 
-          {/* Custom Date Range Pickers when in Period Mode */}
           {(filterMode === '7dias' || filterMode === 'mes' || filterMode === 'custom') && (
-            <div className="flex items-center gap-2 bg-[#161616] px-3 py-1.5 rounded-xl border border-[#262626] text-xs">
+            <div className="flex items-center gap-2 bg-[#161616] px-3 py-1.5 rounded-xl border border-[#222222] text-xs">
               <span className="text-slate-400 font-semibold">De:</span>
               <input
                 type="date"
@@ -933,32 +873,26 @@ export const SiscomDashboardView: React.FC = () => {
             onClick={() => setIsPrintMode(!isPrintMode)}
             className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer ${
               isPrintMode
-                ? 'bg-amber-500/20 text-[#FACC15] border-amber-500/40'
-                : 'bg-[#161616] text-slate-300 border-[#262626] hover:text-white hover:bg-[#1E1E1E]'
+                ? 'bg-[#1F1F1F] text-[#FACC15] border-[#FACC15]/50'
+                : 'bg-[#161616] text-slate-300 border-[#222222] hover:text-white hover:bg-[#1C1C1C]'
             }`}
-            title="Ocultar painel lateral para tirar print limpo da tela"
           >
             {isPrintMode ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-            <span>{isPrintMode ? 'Sair do Modo Print' : 'Modo Print Limpo'}</span>
+            <span>{isPrintMode ? 'Sair do Modo Print' : 'Modo Print'}</span>
           </button>
 
           <button
             onClick={handleCopyImageToClipboard}
-            className={`px-3.5 py-2 rounded-xl text-xs font-extrabold border transition-all flex items-center gap-1.5 cursor-pointer ${
-              copiedImage
-                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                : 'bg-[#18181F] text-slate-200 border-[#2C2C38] hover:border-slate-500 hover:text-white'
-            }`}
-            title="Copia a imagem pronta para colar (Ctrl+V) direto no grupo do WhatsApp"
+            className="px-3.5 py-2 rounded-xl text-xs font-bold border bg-[#161616] text-slate-200 border-[#222222] hover:bg-[#1C1C1C] hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
           >
             {copiedImage ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-            <span>{copiedImage ? 'Imagem Copiada!' : 'Copiar Imagem'}</span>
+            <span>{copiedImage ? 'Copiada!' : 'Copiar Imagem'}</span>
           </button>
 
           <button
             onClick={handleDownloadPNG}
             disabled={downloadingImage}
-            className="px-4 py-2 rounded-xl bg-[#FACC15] hover:bg-amber-400 text-slate-950 text-xs font-black transition-all flex items-center gap-1.5 shadow-lg shadow-amber-950/30 cursor-pointer"
+            className="px-4 py-2 rounded-xl bg-[#FACC15] hover:bg-amber-400 text-slate-950 text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Baixar PNG</span>
@@ -966,20 +900,24 @@ export const SiscomDashboardView: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content Layout: Left Input Panel + Right Compact Dashboard Card */}
-      <div className={`grid grid-cols-1 ${isPrintMode ? 'lg:grid-cols-1 max-w-4xl mx-auto' : ' xl:grid-cols-12'} gap-6 items-start`}>
-        {/* LEFT COLUMN: Daily Data Entry & Past Days Selector (Hidden in Print Mode) */}
+      {/* Main Content Layout */}
+      <div
+        className={`grid grid-cols-1 ${
+          isPrintMode ? 'lg:grid-cols-1 max-w-4xl mx-auto' : 'xl:grid-cols-12'
+        } gap-6 items-start`}
+      >
+        {/* LEFT COLUMN: Daily Data Entry & Chart Controls (Hidden in Print Mode) */}
         {!isPrintMode && (
           <div className="xl:col-span-5 space-y-4">
             <form
               onSubmit={handleSaveRecord}
-              className="p-5 rounded-2xl bg-[#101010] border border-[#222222] space-y-5 shadow-xl"
+              className="p-5 rounded-2xl bg-[#101010] border border-[#222222] space-y-4"
             >
-              {/* Date Selector Header for Inserting or Updating Past Days */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#1E1E1E]">
+              {/* Date Selector Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-[#222222]">
                 <div>
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#FACC15] block">
-                    LANÇAMENTO / EDIÇÃO DIÁRIA
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 block">
+                    LANÇAMENTO DIÁRIO
                   </span>
                   <h2 className="text-sm font-bold text-white">
                     {selectedDate === todayStr
@@ -989,7 +927,7 @@ export const SiscomDashboardView: React.FC = () => {
                 </div>
 
                 {/* Date Navigation Controls */}
-                <div className="flex items-center gap-1.5 bg-[#161616] p-1 rounded-xl border border-[#262626]">
+                <div className="flex items-center gap-1 bg-[#161616] p-1 rounded-xl border border-[#222222]">
                   <button
                     type="button"
                     onClick={() => shiftSelectedDate(-1)}
@@ -1008,7 +946,7 @@ export const SiscomDashboardView: React.FC = () => {
                         setFilterMode('dia');
                       }
                     }}
-                    className="bg-transparent text-xs font-extrabold text-white px-1.5 py-1 focus:outline-none cursor-pointer"
+                    className="bg-transparent text-xs font-bold text-white px-1.5 py-1 focus:outline-none cursor-pointer"
                   />
 
                   <button
@@ -1027,7 +965,7 @@ export const SiscomDashboardView: React.FC = () => {
                         setSelectedDate(todayStr);
                         setFilterMode('dia');
                       }}
-                      className="px-2 py-1 rounded-lg bg-amber-500/15 text-[#FACC15] text-[10px] font-extrabold hover:bg-amber-500/25 transition-colors cursor-pointer"
+                      className="px-2 py-1 rounded-lg bg-[#222222] text-slate-200 text-[10px] font-bold hover:text-white transition-colors cursor-pointer"
                     >
                       Hoje
                     </button>
@@ -1036,27 +974,20 @@ export const SiscomDashboardView: React.FC = () => {
               </div>
 
               {/* SECTION 1: TRANSFERÊNCIAS */}
-              <div className="p-3.5 rounded-xl bg-[#151519] border border-[#23232B] space-y-3">
+              <div className="p-3.5 rounded-xl bg-[#161616] border border-[#222222] space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <ArrowRightLeft className="w-4 h-4 text-sky-400" />
-                    <span className="text-xs font-extrabold uppercase tracking-wider text-sky-400">
-                      1. Transferências
-                    </span>
-                  </div>
-                  <span className="text-[11px] font-bold text-slate-400">
-                    Média/Hora calc.:{' '}
-                    <strong className="text-sky-400">
-                      {formMediaHora.toFixed(1).replace('.', ',')}/h
-                    </strong>
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-300">
+                    Transferências
+                  </span>
+                  <span className="text-[11px] font-medium text-slate-400">
+                    Média/Hora: <strong className="text-white">{formMediaHora.toFixed(1).replace('.', ',')}/h</strong>
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
-                      Horas rodadas no dia{' '}
-                      <span className="text-[10px] text-slate-500">(oculto no print)</span>
+                    <label className="block text-[11px] font-medium text-slate-400 mb-1">
+                      Horas rodadas (oculto)
                     </label>
                     <input
                       type="number"
@@ -1065,12 +996,12 @@ export const SiscomDashboardView: React.FC = () => {
                       placeholder="Ex: 8.5"
                       value={horasRodadas}
                       onChange={e => setHorasRodadas(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-[#0D0D10] border border-[#2A2A35] text-sm font-bold text-white focus:outline-none focus:border-sky-400 transition-colors"
+                      className="w-full px-3 py-2 rounded-xl bg-[#0D0D0D] border border-[#222222] text-sm font-bold text-white focus:outline-none focus:border-slate-500 transition-colors"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                    <label className="block text-[11px] font-medium text-slate-400 mb-1">
                       Total do dia
                     </label>
                     <input
@@ -1079,32 +1010,26 @@ export const SiscomDashboardView: React.FC = () => {
                       placeholder="Ex: 420"
                       value={totalTransferencias}
                       onChange={e => setTotalTransferencias(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-[#0D0D10] border border-[#2A2A35] text-sm font-bold text-white focus:outline-none focus:border-sky-400 transition-colors"
+                      className="w-full px-3 py-2 rounded-xl bg-[#0D0D0D] border border-[#222222] text-sm font-bold text-white focus:outline-none focus:border-slate-500 transition-colors"
                     />
                   </div>
                 </div>
               </div>
 
               {/* SECTION 2: PRODUÇÃO */}
-              <div className="p-3.5 rounded-xl bg-[#151519] border border-[#23232B] space-y-3">
+              <div className="p-3.5 rounded-xl bg-[#161616] border border-[#222222] space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-[#FACC15]" />
-                    <span className="text-xs font-extrabold uppercase tracking-wider text-[#FACC15]">
-                      2. Produção
-                    </span>
-                  </div>
-                  <span className="text-[11px] font-bold text-slate-400">
-                    % Conversão calc.:{' '}
-                    <strong className="text-emerald-400">
-                      {formConversaoPct.toFixed(2).replace('.', ',')}%
-                    </strong>
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-300">
+                    Produção
+                  </span>
+                  <span className="text-[11px] font-medium text-slate-400">
+                    Conversão: <strong className="text-white">{formConversaoPct.toFixed(1).replace('.', ',')}%</strong>
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                    <label className="block text-[11px] font-medium text-slate-400 mb-1">
                       Leads Indicados
                     </label>
                     <input
@@ -1113,12 +1038,12 @@ export const SiscomDashboardView: React.FC = () => {
                       placeholder="Ex: 180"
                       value={leadsIndicados}
                       onChange={e => setLeadsIndicados(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-[#0D0D10] border border-[#2A2A35] text-sm font-bold text-white focus:outline-none focus:border-[#FACC15] transition-colors"
+                      className="w-full px-3 py-2 rounded-xl bg-[#0D0D0D] border border-[#222222] text-sm font-bold text-white focus:outline-none focus:border-slate-500 transition-colors"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                    <label className="block text-[11px] font-medium text-slate-400 mb-1">
                       Contas Abertas
                     </label>
                     <input
@@ -1127,34 +1052,30 @@ export const SiscomDashboardView: React.FC = () => {
                       placeholder="Ex: 45"
                       value={contasAbertas}
                       onChange={e => setContasAbertas(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-[#0D0D10] border border-[#2A2A35] text-sm font-bold text-white focus:outline-none focus:border-[#FACC15] transition-colors"
+                      className="w-full px-3 py-2 rounded-xl bg-[#0D0D0D] border border-[#222222] text-sm font-bold text-white focus:outline-none focus:border-slate-500 transition-colors"
                     />
                   </div>
                 </div>
               </div>
 
               {/* SECTION 3: MAILING */}
-              <div className="p-3.5 rounded-xl bg-[#151519] border border-[#23232B] space-y-3">
+              <div className="p-3.5 rounded-xl bg-[#161616] border border-[#222222] space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-purple-400" />
-                    <span className="text-xs font-extrabold uppercase tracking-wider text-purple-400">
-                      3. Mailing
-                    </span>
-                  </div>
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-300">
+                    Mailing
+                  </span>
                   <button
                     type="button"
                     onClick={() => setInvertAtritadosColor(!invertAtritadosColor)}
-                    className="text-[10px] font-semibold text-slate-400 hover:text-slate-200 underline cursor-pointer"
-                    title="Alternar se queda em % Atritados é destacada como positiva (verde)"
+                    className="text-[10px] font-medium text-slate-400 hover:text-slate-200 underline cursor-pointer"
                   >
-                    Atritados: {invertAtritadosColor ? 'Menor = Verde' : 'Maior = Verde'}
+                    Atritados: {invertAtritadosColor ? 'Menor = Positivo' : 'Maior = Positivo'}
                   </button>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                    <label className="block text-[11px] font-medium text-slate-400 mb-1">
                       % Produtividade do Mailing
                     </label>
                     <input
@@ -1164,12 +1085,12 @@ export const SiscomDashboardView: React.FC = () => {
                       placeholder="Ex: 38.5"
                       value={produtividadeMailing}
                       onChange={e => setProdutividadeMailing(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-[#0D0D10] border border-[#2A2A35] text-sm font-bold text-white focus:outline-none focus:border-purple-400 transition-colors"
+                      className="w-full px-3 py-2 rounded-xl bg-[#0D0D0D] border border-[#222222] text-sm font-bold text-white focus:outline-none focus:border-slate-500 transition-colors"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                    <label className="block text-[11px] font-medium text-slate-400 mb-1">
                       % Atritados
                     </label>
                     <input
@@ -1179,9 +1100,40 @@ export const SiscomDashboardView: React.FC = () => {
                       placeholder="Ex: 6.4"
                       value={atritados}
                       onChange={e => setAtritados(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-[#0D0D10] border border-[#2A2A35] text-sm font-bold text-white focus:outline-none focus:border-purple-400 transition-colors"
+                      className="w-full px-3 py-2 rounded-xl bg-[#0D0D0D] border border-[#222222] text-sm font-bold text-white focus:outline-none focus:border-slate-500 transition-colors"
                     />
                   </div>
+                </div>
+              </div>
+
+              {/* Chart Visual Controls (Moved here from the print area) */}
+              <div className="p-3 rounded-xl bg-[#161616] border border-[#222222] flex items-center justify-between gap-2">
+                <span className="text-[11px] font-bold text-slate-400">Opções do Gráfico:</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowPointLabels(!showPointLabels)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer ${
+                      showPointLabels
+                        ? 'bg-[#222222] text-white border-[#333333]'
+                        : 'bg-[#101010] text-slate-400 border-[#222222]'
+                    }`}
+                  >
+                    {showPointLabels ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                    <span>Rótulos</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setUseDualAxis(!useDualAxis)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
+                      useDualAxis
+                        ? 'bg-[#222222] text-white border-[#333333]'
+                        : 'bg-[#101010] text-slate-400 border-[#222222]'
+                    }`}
+                  >
+                    {useDualAxis ? 'Eixo Duplo' : 'Escala Única'}
+                  </button>
                 </div>
               </div>
 
@@ -1191,10 +1143,10 @@ export const SiscomDashboardView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleDeleteDate(selectedDate)}
-                    className="px-3 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                    className="px-3 py-2.5 rounded-xl bg-[#161616] hover:bg-rose-950/30 text-slate-400 hover:text-rose-400 border border-[#222222] text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    <span>Limpar Dia</span>
+                    <span>Limpar</span>
                   </button>
                 ) : (
                   <div />
@@ -1203,7 +1155,7 @@ export const SiscomDashboardView: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSyncing}
-                  className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer ${
+                  className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
                     saveSuccess
                       ? 'bg-emerald-500 text-slate-950'
                       : 'bg-[#FACC15] hover:bg-amber-400 text-slate-950'
@@ -1212,15 +1164,15 @@ export const SiscomDashboardView: React.FC = () => {
                   {saveSuccess ? (
                     <>
                       <Check className="w-4 h-4" />
-                      <span>Salvo e Sincronizado!</span>
+                      <span>Salvo!</span>
                     </>
                   ) : (
                     <>
                       <Save className="w-4 h-4" />
                       <span>
                         {store.records[selectedDate]
-                          ? `Atualizar Dados (${formatBRDate(selectedDate)})`
-                          : `Salvar Dados (${formatBRDate(selectedDate)})`}
+                          ? `Atualizar (${formatBRDate(selectedDate)})`
+                          : `Salvar (${formatBRDate(selectedDate)})`}
                       </span>
                     </>
                   )}
@@ -1229,29 +1181,23 @@ export const SiscomDashboardView: React.FC = () => {
             </form>
 
             {/* Quick Access History of Previous Days */}
-            <div className="p-4 rounded-2xl bg-[#101010] border border-[#222222] space-y-3 shadow-xl">
+            <div className="p-4 rounded-2xl bg-[#101010] border border-[#222222] space-y-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <History className="w-4 h-4 text-slate-400" />
-                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-300">
-                    Dias Anteriores Lançados ({historyList.length})
-                  </h3>
-                </div>
-                <span className="text-[10px] text-slate-500 font-medium">
-                  Clique em um dia para editar
-                </span>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Histórico de Dias ({historyList.length})
+                </h3>
+                <span className="text-[10px] text-slate-500">Clique para editar</span>
               </div>
 
               {historyList.length === 0 ? (
-                <p className="text-xs text-slate-500 py-3 text-center">
-                  Nenhum dia salvo ainda. Insira os dados acima e clique em Salvar.
+                <p className="text-xs text-slate-500 py-2 text-center">
+                  Nenhum registro salvo.
                 </p>
               ) : (
-                <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
+                <div className="max-h-44 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
                   {historyList.map(item => {
                     const isSelected = item.date === selectedDate;
                     const itemConv = calcConversaoPct(item.contasAbertas, item.leadsIndicados);
-                    const itemMediaH = calcMediaHora(item.totalTransferencias, item.horasRodadas);
                     return (
                       <div
                         key={item.date}
@@ -1261,36 +1207,25 @@ export const SiscomDashboardView: React.FC = () => {
                         }}
                         className={`p-2.5 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition-all ${
                           isSelected
-                            ? 'bg-amber-500/10 border-amber-500/50 text-white'
-                            : 'bg-[#151519] border-[#22222A] text-slate-300 hover:border-slate-700'
+                            ? 'bg-[#1A1A1A] border-[#383838] text-white'
+                            : 'bg-[#141414] border-[#222222] text-slate-300 hover:border-[#2E2E2E]'
                         }`}
                       >
                         <div className="flex items-center gap-2.5">
-                          <span
-                            className={`px-2 py-0.5 rounded-md font-extrabold text-[11px] ${
-                              isSelected
-                                ? 'bg-[#FACC15] text-slate-950'
-                                : 'bg-[#22222A] text-slate-300'
-                            }`}
-                          >
-                            {formatBRDate(item.date)}
-                          </span>
+                          <span className="font-bold text-white">{formatBRDate(item.date)}</span>
                           <span className="text-[11px] text-slate-400">
-                            Transf: <strong className="text-white">{item.totalTransferencias}</strong>{' '}
-                            ({itemMediaH.toFixed(1)}/h)
+                            Transf: <strong className="text-slate-200">{item.totalTransferencias}</strong>
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-3 text-[11px]">
-                          <span className="text-slate-400">
-                            Leads: <strong className="text-lime-400">{item.leadsIndicados}</strong>
+                        <div className="flex items-center gap-3 text-[11px] text-slate-400">
+                          <span>
+                            Leads: <strong className="text-slate-200">{item.leadsIndicados}</strong>
                           </span>
-                          <span className="text-slate-400">
-                            Contas: <strong className="text-sky-400">{item.contasAbertas}</strong>
+                          <span>
+                            Contas: <strong className="text-slate-200">{item.contasAbertas}</strong>
                           </span>
-                          <span className="text-emerald-400 font-bold">
-                            {itemConv.toFixed(1)}%
-                          </span>
+                          <span className="text-slate-300 font-bold">{itemConv.toFixed(1)}%</span>
                         </div>
                       </div>
                     );
@@ -1301,40 +1236,25 @@ export const SiscomDashboardView: React.FC = () => {
           </div>
         )}
 
-        {/* RIGHT COLUMN: Compact Visual Dashboard Card (Screenshot / Share Ready) */}
-        <div className={`${isPrintMode ? 'col-span-1' : 'xl:col-span-7'} space-y-3`}>
-          {/* THE CAPTURE CARD */}
+        {/* RIGHT COLUMN: Clean Neutral Dashboard Card (Screenshot Ready) */}
+        <div className={`${isPrintMode ? 'col-span-1' : 'xl:col-span-7'}`}>
           <div
             ref={captureCardRef}
-            className="p-5 sm:p-6 rounded-3xl bg-[#111115] border border-[#25252E] shadow-2xl space-y-5 relative overflow-hidden"
+            className="p-6 rounded-2xl bg-[#101010] border border-[#222222] space-y-5"
           >
-            {/* Subtle top accent glow */}
-            <div className="absolute -top-24 -right-24 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
-
             {/* Card Header */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#22222A] pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-1.5 h-9 rounded-full bg-[#FACC15]" />
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">
-                      DASHBOARD SISCOM
-                    </h2>
-                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-amber-500/15 text-[#FACC15] border border-amber-500/30">
-                      {activeRange.isSingleDay ? 'Fechamento Diário' : 'Acumulado Período'}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 font-medium">
-                    Comparativo automático vs. média histórica ({systemAverages.daysCount}{' '}
-                    {systemAverages.daysCount === 1 ? 'dia registrado' : 'dias registrados'})
-                  </p>
-                </div>
+            <div className="flex items-center justify-between gap-3 border-b border-[#222222] pb-4">
+              <div>
+                <h2 className="text-lg font-black text-white tracking-tight">
+                  DASHBOARD SISCOM
+                </h2>
+                <p className="text-xs text-slate-400 font-medium">
+                  Comparativo vs. média histórica
+                </p>
               </div>
 
-              {/* Date / Period Badge */}
-              <div className="px-3.5 py-2 rounded-xl bg-[#181820] border border-[#FACC15]/40 flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-[#FACC15]" />
-                <span className="text-xs font-black text-[#FACC15] tracking-wide">
+              <div className="px-3 py-1.5 rounded-xl bg-[#161616] border border-[#222222]">
+                <span className="text-xs font-bold text-slate-200">
                   {activeRange.isSingleDay
                     ? formatBRDate(activeRange.start)
                     : `${formatBRDate(activeRange.start)} a ${formatBRDate(activeRange.end)}`}
@@ -1342,24 +1262,20 @@ export const SiscomDashboardView: React.FC = () => {
               </div>
             </div>
 
-            {/* 3 Compact KPI Blocks: TRANSFERÊNCIAS | PRODUÇÃO | MAILING */}
+            {/* 3 Compact Neutral KPI Blocks: TRANSFERÊNCIAS | PRODUÇÃO | MAILING */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5">
-              {/* 1. TRANSFERÊNCIAS (4 cols) */}
-              <div className="md:col-span-4 p-4 rounded-2xl bg-[#16161D] border border-[#262632] flex flex-col justify-between space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-sky-400 flex items-center gap-1.5">
-                    <ArrowRightLeft className="w-3.5 h-3.5" />
-                    Transferências
-                  </span>
-                </div>
+              {/* 1. TRANSFERÊNCIAS */}
+              <div className="md:col-span-4 p-4 rounded-xl bg-[#161616] border border-[#222222] space-y-3">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 block">
+                  Transferências
+                </span>
 
-                <div className="grid grid-cols-2 gap-2 pt-1">
-                  {/* Total do Dia */}
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <span className="text-[11px] text-slate-400 font-semibold block">
+                    <span className="text-[11px] text-slate-400 font-medium block">
                       {activeRange.isSingleDay ? 'Total do Dia' : 'Total Período'}
                     </span>
-                    <div className="flex items-baseline gap-1.5 mt-0.5 flex-wrap">
+                    <div className="flex items-baseline gap-1.5 mt-1 flex-wrap">
                       <span className="text-2xl font-black text-white tracking-tight">
                         {displayedMetrics.totalTransferencias.toLocaleString('pt-BR')}
                       </span>
@@ -1367,137 +1283,90 @@ export const SiscomDashboardView: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Média / Hora */}
                   <div>
-                    <span className="text-[11px] text-slate-400 font-semibold block">
+                    <span className="text-[11px] text-slate-400 font-medium block">
                       Média / Hora
                     </span>
-                    <div className="flex items-baseline gap-1.5 mt-0.5 flex-wrap">
-                      <span className="text-2xl font-black text-sky-400 tracking-tight">
+                    <div className="flex items-baseline gap-1.5 mt-1 flex-wrap">
+                      <span className="text-2xl font-black text-white tracking-tight">
                         {displayedMetrics.mediaHora.toFixed(1).replace('.', ',')}
                       </span>
                       <MinimalDeltaBadge delta={deltas.mediaHora} />
                     </div>
                   </div>
                 </div>
-
-                <div className="pt-2 border-t border-[#22222C] flex items-center justify-between text-[10px] text-slate-500 font-medium">
-                  <span>
-                    Média sist.:{' '}
-                    <strong className="text-slate-400">
-                      {Math.round(systemAverages.avgTotalTransferencias).toLocaleString('pt-BR')}/dia
-                    </strong>
-                  </span>
-                  <span>
-                    <strong className="text-slate-400">
-                      {systemAverages.avgMediaHora.toFixed(1).replace('.', ',')}/h
-                    </strong>
-                  </span>
-                </div>
               </div>
 
-              {/* 2. PRODUÇÃO (5 cols) */}
-              <div className="md:col-span-5 p-4 rounded-2xl bg-[#16161D] border border-[#262632] flex flex-col justify-between space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#FACC15] flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5" />
-                    Produção
-                  </span>
-                </div>
+              {/* 2. PRODUÇÃO */}
+              <div className="md:col-span-5 p-4 rounded-xl bg-[#161616] border border-[#222222] space-y-3">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 block">
+                  Produção
+                </span>
 
-                <div className="grid grid-cols-3 gap-2 pt-1">
-                  {/* Leads Indicados */}
+                <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <span className="text-[11px] text-slate-400 font-semibold block truncate">
+                    <span className="text-[11px] text-slate-400 font-medium block truncate">
                       Leads Indic.
                     </span>
-                    <div className="flex flex-col items-start gap-1 mt-0.5">
-                      <span className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                    <div className="flex items-baseline gap-1.5 mt-1 flex-wrap">
+                      <span className="text-2xl font-black text-white tracking-tight">
                         {displayedMetrics.leadsIndicados.toLocaleString('pt-BR')}
                       </span>
                       <MinimalDeltaBadge delta={deltas.leadsIndicados} />
                     </div>
                   </div>
 
-                  {/* Contas Abertas */}
                   <div>
-                    <span className="text-[11px] text-slate-400 font-semibold block truncate">
+                    <span className="text-[11px] text-slate-400 font-medium block truncate">
                       Contas Abertas
                     </span>
-                    <div className="flex flex-col items-start gap-1 mt-0.5">
-                      <span className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                    <div className="flex items-baseline gap-1.5 mt-1 flex-wrap">
+                      <span className="text-2xl font-black text-white tracking-tight">
                         {displayedMetrics.contasAbertas.toLocaleString('pt-BR')}
                       </span>
                       <MinimalDeltaBadge delta={deltas.contasAbertas} />
                     </div>
                   </div>
 
-                  {/* % Conversão */}
                   <div>
-                    <span className="text-[11px] text-slate-400 font-semibold block truncate">
+                    <span className="text-[11px] text-slate-400 font-medium block truncate">
                       % Conversão
                     </span>
-                    <div className="flex flex-col items-start gap-1 mt-0.5">
-                      <span className="text-xl sm:text-2xl font-black text-emerald-400 tracking-tight">
+                    <div className="flex items-baseline gap-1.5 mt-1 flex-wrap">
+                      <span className="text-2xl font-black text-white tracking-tight">
                         {displayedMetrics.conversaoPct.toFixed(1).replace('.', ',')}%
                       </span>
                       <MinimalDeltaBadge delta={deltas.conversaoPct} />
                     </div>
                   </div>
                 </div>
-
-                <div className="pt-2 border-t border-[#22222C] flex items-center justify-between text-[10px] text-slate-500 font-medium">
-                  <span>
-                    Média sist.: Leads{' '}
-                    <strong className="text-slate-400">
-                      {Math.round(systemAverages.avgLeadsIndicados)}
-                    </strong>
-                  </span>
-                  <span>
-                    Contas{' '}
-                    <strong className="text-slate-400">
-                      {Math.round(systemAverages.avgContasAbertas)}
-                    </strong>
-                  </span>
-                  <span>
-                    Conv.{' '}
-                    <strong className="text-slate-400">
-                      {systemAverages.avgConversaoPct.toFixed(1).replace('.', ',')}%
-                    </strong>
-                  </span>
-                </div>
               </div>
 
-              {/* 3. MAILING (3 cols) */}
-              <div className="md:col-span-3 p-4 rounded-2xl bg-[#16161D] border border-[#262632] flex flex-col justify-between space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-purple-400 flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5" />
-                    Mailing
-                  </span>
-                </div>
+              {/* 3. MAILING */}
+              <div className="md:col-span-3 p-4 rounded-xl bg-[#161616] border border-[#222222] space-y-3">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 block">
+                  Mailing
+                </span>
 
-                <div className="grid grid-cols-2 gap-2 pt-1">
-                  {/* % Produtividade */}
+                <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <span className="text-[11px] text-slate-400 font-semibold block truncate">
+                    <span className="text-[11px] text-slate-400 font-medium block truncate">
                       % Produtiv.
                     </span>
-                    <div className="flex flex-col items-start gap-1 mt-0.5">
-                      <span className="text-xl font-black text-white tracking-tight">
+                    <div className="flex items-baseline gap-1.5 mt-1 flex-wrap">
+                      <span className="text-2xl font-black text-white tracking-tight">
                         {displayedMetrics.produtividadeMailing.toFixed(1).replace('.', ',')}%
                       </span>
                       <MinimalDeltaBadge delta={deltas.produtividadeMailing} />
                     </div>
                   </div>
 
-                  {/* % Atritados */}
                   <div>
-                    <span className="text-[11px] text-slate-400 font-semibold block truncate">
+                    <span className="text-[11px] text-slate-400 font-medium block truncate">
                       % Atritados
                     </span>
-                    <div className="flex flex-col items-start gap-1 mt-0.5">
-                      <span className="text-xl font-black text-orange-400 tracking-tight">
+                    <div className="flex items-baseline gap-1.5 mt-1 flex-wrap">
+                      <span className="text-2xl font-black text-white tracking-tight">
                         {displayedMetrics.atritados.toFixed(1).replace('.', ',')}%
                       </span>
                       <MinimalDeltaBadge
@@ -1507,104 +1376,53 @@ export const SiscomDashboardView: React.FC = () => {
                     </div>
                   </div>
                 </div>
-
-                <div className="pt-2 border-t border-[#22222C] flex items-center justify-between text-[10px] text-slate-500 font-medium">
-                  <span>
-                    Média:{' '}
-                    <strong className="text-slate-400">
-                      {systemAverages.avgProdutividadeMailing.toFixed(1).replace('.', ',')}%
-                    </strong>
-                  </span>
-                  <span>
-                    Atrit:{' '}
-                    <strong className="text-slate-400">
-                      {systemAverages.avgAtritados.toFixed(1).replace('.', ',')}%
-                    </strong>
-                  </span>
-                </div>
               </div>
             </div>
 
-            {/* 7-Day Comparative Chart Section (Style matching reference image) */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-[#16161D] border border-[#262632] space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <h3 className="text-xs sm:text-sm font-extrabold text-white tracking-wide uppercase">
-                    Desempenho dos Últimos 7 Dias — Leads Indicados vs. Contas Abertas
-                  </h3>
-                  <p className="text-[11px] text-slate-400">
-                    Evolução diária comparativa encerrando em {formatBRDate(activeRange.end)}
-                  </p>
-                </div>
-
-                {/* Subtle Chart Display Controls */}
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setShowPointLabels(!showPointLabels)}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all flex items-center gap-1 cursor-pointer ${
-                      showPointLabels
-                        ? 'bg-[#22222E] text-white border-slate-600'
-                        : 'bg-[#121217] text-slate-400 border-[#252530]'
-                    }`}
-                    title="Mostrar ou ocultar números acima dos pontos"
-                  >
-                    {showPointLabels ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                    <span>Rótulos</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setUseDualAxis(!useDualAxis)}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
-                      useDualAxis
-                        ? 'bg-amber-500/15 text-[#FACC15] border-amber-500/40'
-                        : 'bg-[#121217] text-slate-400 border-[#252530] hover:text-slate-200'
-                    }`}
-                    title="Alternar entre Escala Única ou Eixo Duplo proporcional"
-                  >
-                    {useDualAxis ? 'Eixo Duplo: ON' : 'Escala Única'}
-                  </button>
-                </div>
+            {/* 7-Day Comparative Chart Section */}
+            <div className="p-5 rounded-xl bg-[#161616] border border-[#222222] space-y-3">
+              <div>
+                <h3 className="text-xs font-extrabold text-slate-300 tracking-wider uppercase">
+                  Comparativo Últimos 7 Dias — Leads Indicados vs. Contas Abertas
+                </h3>
               </div>
 
-              {/* Line Chart matching the uploaded reference style */}
-              <div className="h-60 w-full pt-2">
+              <div className="h-56 w-full pt-2">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={chart7DaysSeries}
-                    margin={{ top: 18, right: 24, left: -12, bottom: 4 }}
+                    margin={{ top: 18, right: 20, left: -16, bottom: 4 }}
                   >
-                    <CartesianGrid stroke="#262632" strokeDasharray="0" vertical={false} />
+                    <CartesianGrid stroke="#222222" strokeDasharray="0" vertical={false} />
                     <XAxis
                       dataKey="shortLabel"
-                      stroke="#64748B"
+                      stroke="#525252"
                       tickLine={false}
-                      axisLine={{ stroke: '#334155' }}
-                      tick={{ fontSize: 11, fontWeight: 700, fill: '#94A3B8' }}
+                      axisLine={{ stroke: '#262626' }}
+                      tick={{ fontSize: 11, fontWeight: 600, fill: '#737373' }}
                     />
                     <YAxis
                       yAxisId="left"
-                      stroke="#64748B"
+                      stroke="#525252"
                       tickLine={false}
                       axisLine={false}
-                      tick={{ fontSize: 11, fill: '#64748B' }}
+                      tick={{ fontSize: 11, fill: '#737373' }}
                     />
                     {useDualAxis && (
                       <YAxis
                         yAxisId="right"
                         orientation="right"
-                        stroke="#38BDF8"
+                        stroke="#737373"
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fontSize: 11, fill: '#38BDF8' }}
+                        tick={{ fontSize: 11, fill: '#737373' }}
                       />
                     )}
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: '#0F0F14',
-                        borderColor: '#2E2E3A',
-                        borderRadius: '12px',
+                        backgroundColor: '#101010',
+                        borderColor: '#222222',
+                        borderRadius: '10px',
                         color: '#FFFFFF',
                         fontSize: '12px',
                         fontWeight: 600
@@ -1615,12 +1433,11 @@ export const SiscomDashboardView: React.FC = () => {
                       ]}
                       labelFormatter={(label: any) => `Dia ${label}`}
                     />
-                    {/* Vertical highlight line on the reference day (like the reference image) */}
                     {chart7DaysSeries.length > 0 && (
                       <ReferenceLine
                         yAxisId="left"
                         x={chart7DaysSeries[chart7DaysSeries.length - 1].shortLabel}
-                        stroke="#475569"
+                        stroke="#2E2E2E"
                         strokeDasharray="3 3"
                       />
                     )}
@@ -1629,17 +1446,17 @@ export const SiscomDashboardView: React.FC = () => {
                       type="linear"
                       dataKey="leadsIndicados"
                       name="leadsIndicados"
-                      stroke="#84CC16"
-                      strokeWidth={2.75}
-                      dot={{ r: 4.5, fill: '#84CC16', stroke: '#111115', strokeWidth: 1.5 }}
-                      activeDot={{ r: 6.5, fill: '#A3E635' }}
+                      stroke="#FACC15"
+                      strokeWidth={2.2}
+                      dot={{ r: 4, fill: '#FACC15', stroke: '#161616', strokeWidth: 1.5 }}
+                      activeDot={{ r: 6, fill: '#FACC15' }}
                     >
                       {showPointLabels && (
                         <LabelList
                           dataKey="leadsIndicados"
                           position="top"
                           offset={8}
-                          style={{ fill: '#A3E635', fontSize: 10, fontWeight: 800 }}
+                          style={{ fill: '#FACC15', fontSize: 10, fontWeight: 700 }}
                         />
                       )}
                     </Line>
@@ -1648,17 +1465,17 @@ export const SiscomDashboardView: React.FC = () => {
                       type="linear"
                       dataKey="contasAbertas"
                       name="contasAbertas"
-                      stroke="#38BDF8"
-                      strokeWidth={2.75}
-                      dot={{ r: 4.5, fill: '#38BDF8', stroke: '#111115', strokeWidth: 1.5 }}
-                      activeDot={{ r: 6.5, fill: '#7DD3FC' }}
+                      stroke="#E5E5E5"
+                      strokeWidth={2.2}
+                      dot={{ r: 4, fill: '#E5E5E5', stroke: '#161616', strokeWidth: 1.5 }}
+                      activeDot={{ r: 6, fill: '#FFFFFF' }}
                     >
                       {showPointLabels && (
                         <LabelList
                           dataKey="contasAbertas"
                           position="bottom"
                           offset={8}
-                          style={{ fill: '#7DD3FC', fontSize: 10, fontWeight: 800 }}
+                          style={{ fill: '#E5E5E5', fontSize: 10, fontWeight: 700 }}
                         />
                       )}
                     </Line>
@@ -1666,24 +1483,16 @@ export const SiscomDashboardView: React.FC = () => {
                 </ResponsiveContainer>
               </div>
 
-              {/* Clean Bottom Legend matching the reference image */}
-              <div className="flex items-center justify-center gap-8 pt-2 border-t border-[#22222C] text-xs">
+              {/* Clean Bottom Legend */}
+              <div className="flex items-center justify-center gap-8 pt-2 border-t border-[#222222] text-xs">
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center">
-                    <span className="w-2.5 h-0.5 bg-lime-500 inline-block" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-lime-500 inline-block -mx-0.5" />
-                    <span className="w-2.5 h-0.5 bg-lime-500 inline-block" />
-                  </div>
-                  <span className="font-bold text-slate-200">Leads Indicados</span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#FACC15] inline-block" />
+                  <span className="font-semibold text-slate-300">Leads Indicados</span>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center">
-                    <span className="w-2.5 h-0.5 bg-sky-400 inline-block" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block -mx-0.5" />
-                    <span className="w-2.5 h-0.5 bg-sky-400 inline-block" />
-                  </div>
-                  <span className="font-bold text-slate-200">Contas Abertas</span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-neutral-200 inline-block" />
+                  <span className="font-semibold text-slate-300">Contas Abertas</span>
                 </div>
               </div>
             </div>
@@ -1695,7 +1504,7 @@ export const SiscomDashboardView: React.FC = () => {
 };
 
 /**
- * Minimalist % Delta Indicator Badge with up/down arrow
+ * Minimalist % Delta Indicator (no box background, just clean arrow + percentage)
  */
 const MinimalDeltaBadge: React.FC<{
   delta: number | null;
@@ -1703,8 +1512,8 @@ const MinimalDeltaBadge: React.FC<{
 }> = ({ delta, invertColor = false }) => {
   if (delta === null || isNaN(delta)) {
     return (
-      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-slate-500 px-1.5 py-0.5 rounded-md bg-slate-800/40">
-        <Minus className="w-2.5 h-2.5" /> 0%
+      <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-600">
+        <Minus className="w-3 h-3" /> 0%
       </span>
     );
   }
@@ -1715,20 +1524,18 @@ const MinimalDeltaBadge: React.FC<{
 
   if (isNeutral) {
     return (
-      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-slate-400 px-1.5 py-0.5 rounded-md bg-slate-800/60">
-        <Minus className="w-2.5 h-2.5" /> 0,0%
+      <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-500">
+        <Minus className="w-3 h-3" /> 0,0%
       </span>
     );
   }
 
   return (
     <span
-      className={`inline-flex items-center gap-0.5 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md ${
-        isPositiveOutcome
-          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
-          : 'bg-rose-500/15 text-rose-400 border border-rose-500/20'
+      className={`inline-flex items-center gap-0.5 text-[11px] font-bold ${
+        isPositiveOutcome ? 'text-emerald-400' : 'text-rose-400'
       }`}
-      title={`${isUp ? 'Acima' : 'Abaixo'} da média existente no sistema`}
+      title={`${isUp ? 'Acima' : 'Abaixo'} da média histórica`}
     >
       {isUp ? (
         <ArrowUpRight className="w-3 h-3 flex-shrink-0" />

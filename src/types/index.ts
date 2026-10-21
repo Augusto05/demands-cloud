@@ -238,3 +238,20 @@ export interface FlowCanvasStore {
   activeBoardId: string;
 }
 
+// Dashboard Siscom Types
+export interface SiscomDailyRecord {
+  date: string; // YYYY-MM-DD
+  horasRodadas: number; // Usado apenas para cálculo de média/hora, não exibido no card final
+  totalTransferencias: number;
+  leadsIndicados: number;
+  contasAbertas: number;
+  produtividadeMailing: number; // % Produtividade do Mailing
+  atritados: number; // % Atritados
+  updatedAt: string; // ISO string
+}
+
+export interface SiscomStore {
+  records: Record<string, SiscomDailyRecord>; // YYYY-MM-DD -> SiscomDailyRecord
+}
+
+

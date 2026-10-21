@@ -17,7 +17,8 @@ import {
   Calendar,
   CheckSquare,
   Bug,
-  Workflow
+  Workflow,
+  TrendingUp
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -63,6 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       items: [
         { id: 'home', label: 'Início', icon: Home },
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'siscom-dashboard', label: 'Dashboard Siscom', icon: TrendingUp },
         { id: 'daily-tracker', label: 'Lançamento Diário', icon: Clock },
         { id: 'kanban', label: 'Kanban de Demandas', icon: LayoutList },
         { id: 'flow-canvas', label: 'Fluxos de Análise', icon: Workflow },

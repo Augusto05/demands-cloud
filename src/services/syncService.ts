@@ -151,12 +151,14 @@ export async function fetchConsolidatedAdminStorage(): Promise<{
   baseData: any[];
   dailyHourly: Record<string, any>;
   bugs: any[];
+  siscomRecords: Record<string, any>;
 }> {
   const allRows = await fetchAllStorage('admin');
   const consolidatedOffices: any[] = [];
   const consolidatedBaseData: any[] = [];
   const consolidatedDailyHourly: Record<string, any> = {};
   const consolidatedBugs: any[] = [];
+  const consolidatedSiscomRecords: Record<string, any> = {};
 
   const seenOfficeIds = new Set<string>();
 
@@ -179,6 +181,9 @@ export async function fetchConsolidatedAdminStorage(): Promise<{
       });
     } else if (key.startsWith('bugs:') && Array.isArray(val)) {
       consolidatedBugs.push(...val);
+    } else if (key.startsWith('siscom_dashboard:') && typeof val === 'object' && val !== null) {
+      const records = (val as any).records || {};
+      Object.assign(consolidatedSiscomRecords, records);
     }
   });
 
@@ -186,7 +191,8 @@ export async function fetchConsolidatedAdminStorage(): Promise<{
     offices: consolidatedOffices,
     baseData: consolidatedBaseData,
     dailyHourly: consolidatedDailyHourly,
-    bugs: consolidatedBugs
+    bugs: consolidatedBugs,
+    siscomRecords: consolidatedSiscomRecords
   };
 }
 

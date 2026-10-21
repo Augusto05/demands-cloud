@@ -18,6 +18,7 @@ import { AgendaView } from './components/AgendaView';
 import { HomeView } from './components/HomeView';
 import { BugReportView } from './components/BugReportView';
 import { FlowCanvasView } from './components/FlowCanvasView';
+import { SiscomDashboardView } from './components/SiscomDashboardView';
 
 import { Office, BaseDataRow, DailyHourlyStore, PeriodFilter } from './types';
 import { 
@@ -288,6 +289,7 @@ export const App: React.FC = () => {
         <span className="text-[11px] font-bold text-slate-400 bg-[#161616] px-2.5 py-1 rounded-lg border border-[#222222]">
           {activeTab === 'home' && 'Início'}
           {activeTab === 'dashboard' && 'Dashboard'}
+          {activeTab === 'siscom-dashboard' && 'Dashboard Siscom'}
           {activeTab === 'daily-tracker' && 'Lançamentos'}
           {activeTab === 'kanban' && 'Kanban'}
           {activeTab === 'flow-canvas' && 'Fluxos de Análise'}
@@ -365,6 +367,10 @@ export const App: React.FC = () => {
               startDate={startDate}
               endDate={endDate}
             />
+          )}
+
+          {activeTab === 'siscom-dashboard' && (
+            <SiscomDashboardView />
           )}
 
           {activeTab === 'daily-tracker' && (

@@ -1,0 +1,245 @@
+import { SiscomDailyRecord, SiscomStore } from '../types';
+import {
+  getStorageItem,
+  saveStorageItem,
+  getUserScopedLocalKey,
+  getCurrentUsername,
+  isMasterAdmin,
+  fetchConsolidatedAdminStorage
+} from './syncService';
+import { supabase, isSupabaseConfigured } from './supabaseClient';
+
+const STORAGE_KEY = 'demands_siscom_dashboard_store';
+const CLOUD_KEY = 'siscom_dashboard';
+
+export const getStoredSiscomStore = (): SiscomStore => {
+  const scopedLocalKey = getUserScopedLocalKey(STORAGE_KEY);
+  const raw = localStorage.getItem(scopedLocalKey);
+  if (raw) {
+    try {
+      const parsed: SiscomStore = JSON.parse(raw);
+      if (parsed && typeof parsed.records === 'object' && parsed.records !== null) {
+        return parsed;
+      }
+    } catch (e) {
+      console.error('[siscomService] Error parsing local store:', e);
+    }
+  }
+  return { records: {} };
+};
+
+export const fetchSiscomStoreFromCloud = async (): Promise<SiscomStore> => {
+  if (isMasterAdmin()) {
+    const consolidated = await fetchConsolidatedAdminStorage();
+    const adminDirect = await getStorageItem<SiscomStore>(CLOUD_KEY, STORAGE_KEY, { records: {} });
+    const mergedRecords: Record<string, SiscomDailyRecord> = {
+      ...(consolidated.siscomRecords || {}),
+      ...(adminDirect.records || {})
+    };
+    return { records: mergedRecords };
+  }
+  return getStorageItem<SiscomStore>(CLOUD_KEY, STORAGE_KEY, { records: {} });
+};
+
+export const saveSiscomRecord = async (
+  store: SiscomStore,
+  record: SiscomDailyRecord
+): Promise<SiscomStore> => {
+  const updatedStore: SiscomStore = {
+    records: {
+      ...store.records,
+      [record.date]: {
+        ...record,
+        updatedAt: new Date().toISOString()
+      }
+    }
+  };
+
+  // 1. Sync via Universal Cloud Collection (multi-device real-time sync)
+  await saveStorageItem(CLOUD_KEY, STORAGE_KEY, updatedStore);
+
+  // 2. Also sync to dedicated relational table siscom_daily_records
+  if (supabase && isSupabaseConfigured) {
+    try {
+      const userKey = getCurrentUsername().trim().toLowerCase();
+      await supabase.from('siscom_daily_records').upsert(
+        {
+          user_key: userKey,
+          record_date: record.date,
+          horas_rodadas: record.horasRodadas,
+          total_transferencias: record.totalTransferencias,
+          leads_indicados: record.leadsIndicados,
+          contas_abertas: record.contasAbertas,
+          produtividade_mailing: record.produtividadeMailing,
+          atritados: record.atritados,
+          updated_at: new Date().toISOString()
+        },
+        { onConflict: 'user_key,record_date' }
+      );
+    } catch (e) {
+      console.warn('[siscomService] Relational table upsert warning:', e);
+    }
+  }
+
+  return updatedStore;
+};
+
+export const deleteSiscomRecord = async (
+  store: SiscomStore,
+  date: string
+): Promise<SiscomStore> => {
+  const nextRecords = { ...store.records };
+  delete nextRecords[date];
+  const updatedStore: SiscomStore = { records: nextRecords };
+
+  await saveStorageItem(CLOUD_KEY, STORAGE_KEY, updatedStore);
+
+  if (supabase && isSupabaseConfigured) {
+    try {
+      const userKey = getCurrentUsername().trim().toLowerCase();
+      await supabase
+        .from('siscom_daily_records')
+        .delete()
+        .eq('user_key', userKey)
+        .eq('record_date', date);
+    } catch (e) {
+      console.warn('[siscomService] Relational table delete warning:', e);
+    }
+  }
+
+  return updatedStore;
+};
+
+// Calculation Helpers
+export const calcMediaHora = (totalTransferencias: number, horasRodadas: number): number => {
+  if (!horasRodadas || horasRodadas <= 0) return 0;
+  return totalTransferencias / horasRodadas;
+};
+
+export const calcConversaoPct = (contasAbertas: number, leadsIndicados: number): number => {
+  if (!leadsIndicados || leadsIndicados <= 0) return 0;
+  return (contasAbertas / leadsIndicados) * 100;
+};
+
+export const calcDeltaPct = (currentValue: number, averageValue: number): number | null => {
+  if (!averageValue || averageValue <= 0) return null;
+  return ((currentValue - averageValue) / averageValue) * 100;
+};
+
+export interface SiscomComputedAverages {
+  daysCount: number;
+  avgTotalTransferencias: number;
+  avgMediaHora: number;
+  avgLeadsIndicados: number;
+  avgContasAbertas: number;
+  avgConversaoPct: number;
+  avgProdutividadeMailing: number;
+  avgAtritados: number;
+}
+
+/**
+ * Computes system-wide historical averages across all valid stored days.
+ */
+export const computeSystemAverages = (
+  recordsMap: Record<string, SiscomDailyRecord>
+): SiscomComputedAverages => {
+  const list = Object.values(recordsMap).filter(
+    r =>
+      r.totalTransferencias > 0 ||
+      r.leadsIndicados > 0 ||
+      r.contasAbertas > 0 ||
+      r.produtividadeMailing > 0 ||
+      r.atritados > 0
+  );
+
+  const count = list.length;
+  if (count === 0) {
+    return {
+      daysCount: 0,
+      avgTotalTransferencias: 0,
+      avgMediaHora: 0,
+      avgLeadsIndicados: 0,
+      avgContasAbertas: 0,
+      avgConversaoPct: 0,
+      avgProdutividadeMailing: 0,
+      avgAtritados: 0
+    };
+  }
+
+  const sumTransferencias = list.reduce((acc, r) => acc + (r.totalTransferencias || 0), 0);
+  const sumLeads = list.reduce((acc, r) => acc + (r.leadsIndicados || 0), 0);
+  const sumContas = list.reduce((acc, r) => acc + (r.contasAbertas || 0), 0);
+  const sumProdMailing = list.reduce((acc, r) => acc + (r.produtividadeMailing || 0), 0);
+  const sumAtritados = list.reduce((acc, r) => acc + (r.atritados || 0), 0);
+
+  // For mediaHora, average across days that have mediaHora > 0
+  const daysWithHours = list.filter(r => r.horasRodadas > 0 && r.totalTransferencias > 0);
+  const avgMediaHora =
+    daysWithHours.length > 0
+      ? daysWithHours.reduce((acc, r) => acc + calcMediaHora(r.totalTransferencias, r.horasRodadas), 0) /
+        daysWithHours.length
+      : 0;
+
+  // For conversaoPct, average across days that have leadsIndicados > 0
+  const daysWithLeads = list.filter(r => r.leadsIndicados > 0);
+  const avgConversaoPct =
+    daysWithLeads.length > 0
+      ? daysWithLeads.reduce((acc, r) => acc + calcConversaoPct(r.contasAbertas, r.leadsIndicados), 0) /
+        daysWithLeads.length
+      : 0;
+
+  return {
+    daysCount: count,
+    avgTotalTransferencias: sumTransferencias / count,
+    avgMediaHora,
+    avgLeadsIndicados: sumLeads / count,
+    avgContasAbertas: sumContas / count,
+    avgConversaoPct,
+    avgProdutividadeMailing: sumProdMailing / count,
+    avgAtritados: sumAtritados / count
+  };
+};
+
+export interface SiscomChartPoint {
+  date: string; // YYYY-MM-DD
+  shortLabel: string; // DD/MM
+  leadsIndicados: number;
+  contasAbertas: number;
+  conversaoPct: number;
+  totalTransferencias: number;
+  hasData: boolean;
+}
+
+/**
+ * Generates the 7-day comparative series ending at referenceDateStr (YYYY-MM-DD).
+ */
+export const getLast7DaysChartSeries = (
+  recordsMap: Record<string, SiscomDailyRecord>,
+  referenceDateStr: string
+): SiscomChartPoint[] => {
+  const [y, m, d] = referenceDateStr.split('-').map(Number);
+  const refDate = new Date(y, (m || 1) - 1, d || 1);
+
+  const series: SiscomChartPoint[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const dt = new Date(refDate);
+    dt.setDate(refDate.getDate() - i);
+    const yyyy = dt.getFullYear();
+    const mm = String(dt.getMonth() + 1).padStart(2, '0');
+    const dd = String(dt.getDate()).padStart(2, '0');
+    const dateKey = `${yyyy}-${mm}-${dd}`;
+    const rec = recordsMap[dateKey];
+
+    series.push({
+      date: dateKey,
+      shortLabel: `${dd}/${mm}`,
+      leadsIndicados: rec ? rec.leadsIndicados : 0,
+      contasAbertas: rec ? rec.contasAbertas : 0,
+      conversaoPct: rec ? calcConversaoPct(rec.contasAbertas, rec.leadsIndicados) : 0,
+      totalTransferencias: rec ? rec.totalTransferencias : 0,
+      hasData: !!rec
+    });
+  }
+
+  return series;
+};

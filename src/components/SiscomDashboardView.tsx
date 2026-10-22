@@ -447,8 +447,8 @@ export const SiscomDashboardView: React.FC = () => {
     const scale = 2;
     const width = 920;
     const isDonut = mailingViewMode === 'grafico';
-    const topBoxH = isDonut ? 176 : 138;
-    const height = isDonut ? 610 : 570;
+    const topBoxH = isDonut ? 162 : 146;
+    const height = isDonut ? 596 : 580;
     const canvas = document.createElement('canvas');
     canvas.width = width * scale;
     canvas.height = height * scale;
@@ -550,49 +550,59 @@ export const SiscomDashboardView: React.FC = () => {
     const col2X = col1X + col1W + gap;
     const col3X = col2X + col2W + gap;
 
-    const drawMetricSlot = (
+    const innerCardTop = topY + 38;
+    const innerCardH = topBoxH - 50;
+
+    const drawMetricBox = (
       x: number,
-      y: number,
+      w: number,
       label: string,
       valueStr: string,
       delta: number | null,
       invert = false
     ) => {
+      roundRect(x, innerCardTop, w, innerCardH, 10);
+      ctx.fillStyle = '#151515';
+      ctx.fill();
+      ctx.strokeStyle = '#1F1F1F';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
       ctx.fillStyle = '#94A3B8';
-      ctx.font = '500 11px Inter, system-ui, sans-serif';
-      ctx.fillText(label, x, y);
+      ctx.font = '600 11px Inter, system-ui, sans-serif';
+      ctx.fillText(label, x + 12, innerCardTop + 20);
 
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = '900 28px Inter, system-ui, sans-serif';
-      ctx.fillText(valueStr, x, y + 32);
+      ctx.font = '900 30px Inter, system-ui, sans-serif';
+      const centerValY = innerCardTop + Math.floor(innerCardH / 2) + 10;
+      ctx.fillText(valueStr, x + 12, centerValY);
 
-      drawDeltaPill(x, y + 54, delta, invert);
+      drawDeltaPill(x + 12, innerCardTop + innerCardH - 10, delta, invert);
     };
-
-    const mY = isDonut ? topY + 60 : topY + 52;
 
     // --- BLOCK 1: TRANSFERÊNCIAS ---
     roundRect(col1X, topY, col1W, topBoxH, 12);
-    ctx.fillStyle = '#141414';
+    ctx.fillStyle = '#101010';
     ctx.fill();
     ctx.strokeStyle = '#222222';
     ctx.stroke();
 
     ctx.fillStyle = '#E2E8F0';
     ctx.font = '800 13px Inter, system-ui, sans-serif';
-    ctx.fillText('TRANSFERÊNCIAS', col1X + 16, topY + 26);
+    ctx.fillText('TRANSFERÊNCIAS', col1X + 14, topY + 24);
 
-    const slot1W = Math.floor((col1W - 32) / 2);
-    drawMetricSlot(
-      col1X + 16,
-      mY,
+    const slot1Gap = 8;
+    const slot1W = Math.floor((col1W - 28 - slot1Gap) / 2);
+    drawMetricBox(
+      col1X + 14,
+      slot1W,
       activeRange.isSingleDay ? 'Total do Dia' : 'Total Período',
       displayedMetrics.totalTransferencias.toLocaleString('pt-BR'),
       deltas.transferencias
     );
-    drawMetricSlot(
-      col1X + 16 + slot1W,
-      mY,
+    drawMetricBox(
+      col1X + 14 + slot1W + slot1Gap,
+      slot1W,
       'Média / Hora',
       displayedMetrics.mediaHora.toFixed(1).replace('.', ','),
       deltas.mediaHora
@@ -600,33 +610,34 @@ export const SiscomDashboardView: React.FC = () => {
 
     // --- BLOCK 2: PRODUÇÃO ---
     roundRect(col2X, topY, col2W, topBoxH, 12);
-    ctx.fillStyle = '#141414';
+    ctx.fillStyle = '#101010';
     ctx.fill();
     ctx.strokeStyle = '#222222';
     ctx.stroke();
 
     ctx.fillStyle = '#E2E8F0';
     ctx.font = '800 13px Inter, system-ui, sans-serif';
-    ctx.fillText('PRODUÇÃO', col2X + 16, topY + 26);
+    ctx.fillText('PRODUÇÃO', col2X + 14, topY + 24);
 
-    const slot2W = Math.floor((col2W - 32) / 3);
-    drawMetricSlot(
-      col2X + 16,
-      mY,
+    const slot2Gap = 8;
+    const slot2W = Math.floor((col2W - 28 - slot2Gap * 2) / 3);
+    drawMetricBox(
+      col2X + 14,
+      slot2W,
       'Leads Indicados',
       displayedMetrics.leadsIndicados.toLocaleString('pt-BR'),
       deltas.leadsIndicados
     );
-    drawMetricSlot(
-      col2X + 16 + slot2W,
-      mY,
+    drawMetricBox(
+      col2X + 14 + slot2W + slot2Gap,
+      slot2W,
       'Contas Abertas',
       displayedMetrics.contasAbertas.toLocaleString('pt-BR'),
       deltas.contasAbertas
     );
-    drawMetricSlot(
-      col2X + 16 + slot2W * 2,
-      mY,
+    drawMetricBox(
+      col2X + 14 + (slot2W + slot2Gap) * 2,
+      slot2W,
       '% Conversão',
       `${displayedMetrics.conversaoPct.toFixed(1).replace('.', ',')}%`,
       deltas.conversaoPct
@@ -634,27 +645,28 @@ export const SiscomDashboardView: React.FC = () => {
 
     // --- BLOCK 3: MAILING ---
     roundRect(col3X, topY, col3W, topBoxH, 12);
-    ctx.fillStyle = '#141414';
+    ctx.fillStyle = '#101010';
     ctx.fill();
     ctx.strokeStyle = '#222222';
     ctx.stroke();
 
     ctx.fillStyle = '#E2E8F0';
     ctx.font = '800 13px Inter, system-ui, sans-serif';
-    ctx.fillText('MAILING', col3X + 16, topY + 26);
+    ctx.fillText('MAILING', col3X + 14, topY + 24);
 
     if (!isDonut) {
-      const slot3W = Math.floor((col3W - 32) / 2);
-      drawMetricSlot(
-        col3X + 16,
-        mY,
+      const slot3Gap = 8;
+      const slot3W = Math.floor((col3W - 28 - slot3Gap) / 2);
+      drawMetricBox(
+        col3X + 14,
+        slot3W,
         '% Produtividade',
         `${displayedMetrics.produtividadeMailing.toFixed(1).replace('.', ',')}%`,
         deltas.produtividadeMailing
       );
-      drawMetricSlot(
-        col3X + 16 + slot3W,
-        mY,
+      drawMetricBox(
+        col3X + 14 + slot3W + slot3Gap,
+        slot3W,
         '% Atritados',
         `${displayedMetrics.atritados.toFixed(1).replace('.', ',')}%`,
         deltas.atritados,
@@ -666,12 +678,12 @@ export const SiscomDashboardView: React.FC = () => {
 
       // Draw Donut Chart in center of Mailing Card
       const centerX = col3X + col3W / 2;
-      const centerY = topY + 86;
-      const outerR = 44;
-      const innerR = 27;
+      const centerY = topY + 84;
+      const outerR = 40;
+      const innerR = 25;
 
       const totalPie = mailingPieData.reduce((s, d) => s + d.value, 0);
-      let currentAngle = -Math.PI / 2; // Start at 12 o'clock
+      let currentAngle = -Math.PI / 2;
 
       mailingPieData.forEach(slice => {
         const sliceAngle = (slice.value / Math.max(1, totalPie)) * Math.PI * 2;
@@ -682,7 +694,7 @@ export const SiscomDashboardView: React.FC = () => {
         ctx.fillStyle = slice.color;
         ctx.fill();
         ctx.lineWidth = 2;
-        ctx.strokeStyle = '#141414';
+        ctx.strokeStyle = '#101010';
         ctx.stroke();
         currentAngle += sliceAngle;
       });
@@ -1411,27 +1423,27 @@ export const SiscomDashboardView: React.FC = () => {
             {/* 3 Balanced KPI Cards in 2 : 3 : 2 proportion */}
             <div className="grid grid-cols-1 lg:grid-cols-7 gap-3 items-stretch">
               {/* 1. TRANSFERÊNCIAS (2/7 width) */}
-              <div className="lg:col-span-2 p-5 rounded-2xl bg-[#101010] border border-[#222222] flex flex-col justify-between space-y-4">
+              <div className="lg:col-span-2 p-4 rounded-2xl bg-[#101010] border border-[#222222] flex flex-col gap-3">
                 <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-200 block">
                   Transferências
                 </span>
 
-                <div className="grid grid-cols-2 gap-3 my-auto">
-                  <div className="min-w-0 flex flex-col items-start">
-                    <span className="text-xs text-slate-400 font-medium block truncate mb-1.5">
+                <div className="grid grid-cols-2 gap-2.5 flex-1">
+                  <div className="min-w-0 p-3 rounded-xl bg-[#151515] border border-[#1E1E1E] flex flex-col justify-between items-start">
+                    <span className="text-[11px] text-slate-400 font-semibold block truncate">
                       {activeRange.isSingleDay ? 'Total do Dia' : 'Total Período'}
                     </span>
-                    <span className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none mb-2">
+                    <span className="text-3xl font-black text-white tracking-tight leading-none my-2">
                       {displayedMetrics.totalTransferencias.toLocaleString('pt-BR')}
                     </span>
                     <MinimalDeltaBadge delta={deltas.transferencias} />
                   </div>
 
-                  <div className="min-w-0 flex flex-col items-start">
-                    <span className="text-xs text-slate-400 font-medium block truncate mb-1.5">
+                  <div className="min-w-0 p-3 rounded-xl bg-[#151515] border border-[#1E1E1E] flex flex-col justify-between items-start">
+                    <span className="text-[11px] text-slate-400 font-semibold block truncate">
                       Média / Hora
                     </span>
-                    <span className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none mb-2">
+                    <span className="text-3xl font-black text-white tracking-tight leading-none my-2">
                       {displayedMetrics.mediaHora.toFixed(1).replace('.', ',')}
                     </span>
                     <MinimalDeltaBadge delta={deltas.mediaHora} />
@@ -1440,37 +1452,37 @@ export const SiscomDashboardView: React.FC = () => {
               </div>
 
               {/* 2. PRODUÇÃO (3/7 width) */}
-              <div className="lg:col-span-3 p-5 rounded-2xl bg-[#101010] border border-[#222222] flex flex-col justify-between space-y-4">
+              <div className="lg:col-span-3 p-4 rounded-2xl bg-[#101010] border border-[#222222] flex flex-col gap-3">
                 <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-200 block">
                   Produção
                 </span>
 
-                <div className="grid grid-cols-3 gap-3 my-auto">
-                  <div className="min-w-0 flex flex-col items-start">
-                    <span className="text-xs text-slate-400 font-medium block truncate mb-1.5">
+                <div className="grid grid-cols-3 gap-2.5 flex-1">
+                  <div className="min-w-0 p-3 rounded-xl bg-[#151515] border border-[#1E1E1E] flex flex-col justify-between items-start">
+                    <span className="text-[11px] text-slate-400 font-semibold block truncate">
                       Leads Indicados
                     </span>
-                    <span className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none mb-2">
+                    <span className="text-3xl font-black text-white tracking-tight leading-none my-2">
                       {displayedMetrics.leadsIndicados.toLocaleString('pt-BR')}
                     </span>
                     <MinimalDeltaBadge delta={deltas.leadsIndicados} />
                   </div>
 
-                  <div className="min-w-0 flex flex-col items-start">
-                    <span className="text-xs text-slate-400 font-medium block truncate mb-1.5">
+                  <div className="min-w-0 p-3 rounded-xl bg-[#151515] border border-[#1E1E1E] flex flex-col justify-between items-start">
+                    <span className="text-[11px] text-slate-400 font-semibold block truncate">
                       Contas Abertas
                     </span>
-                    <span className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none mb-2">
+                    <span className="text-3xl font-black text-white tracking-tight leading-none my-2">
                       {displayedMetrics.contasAbertas.toLocaleString('pt-BR')}
                     </span>
                     <MinimalDeltaBadge delta={deltas.contasAbertas} />
                   </div>
 
-                  <div className="min-w-0 flex flex-col items-start">
-                    <span className="text-xs text-slate-400 font-medium block truncate mb-1.5">
+                  <div className="min-w-0 p-3 rounded-xl bg-[#151515] border border-[#1E1E1E] flex flex-col justify-between items-start">
+                    <span className="text-[11px] text-slate-400 font-semibold block truncate">
                       % Conversão
                     </span>
-                    <span className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none mb-2">
+                    <span className="text-3xl font-black text-white tracking-tight leading-none my-2">
                       {displayedMetrics.conversaoPct.toFixed(1).replace('.', ',')}%
                     </span>
                     <MinimalDeltaBadge delta={deltas.conversaoPct} />
@@ -1479,7 +1491,7 @@ export const SiscomDashboardView: React.FC = () => {
               </div>
 
               {/* 3. MAILING (2/7 width) - Toggles between Padrão and Donut Chart */}
-              <div className="lg:col-span-2 p-5 rounded-2xl bg-[#101010] border border-[#222222] flex flex-col justify-between space-y-4">
+              <div className="lg:col-span-2 p-4 rounded-2xl bg-[#101010] border border-[#222222] flex flex-col gap-3 justify-between">
                 <div className="flex items-center justify-between">
                   <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-200 block">
                     Mailing
@@ -1490,22 +1502,22 @@ export const SiscomDashboardView: React.FC = () => {
                 </div>
 
                 {mailingViewMode === 'padrao' ? (
-                  <div className="grid grid-cols-2 gap-3 my-auto">
-                    <div className="min-w-0 flex flex-col items-start">
-                      <span className="text-xs text-slate-400 font-medium block truncate mb-1.5">
+                  <div className="grid grid-cols-2 gap-2.5 flex-1">
+                    <div className="min-w-0 p-3 rounded-xl bg-[#151515] border border-[#1E1E1E] flex flex-col justify-between items-start">
+                      <span className="text-[11px] text-slate-400 font-semibold block truncate">
                         % Produtividade
                       </span>
-                      <span className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none mb-2">
+                      <span className="text-3xl font-black text-white tracking-tight leading-none my-2">
                         {displayedMetrics.produtividadeMailing.toFixed(1).replace('.', ',')}%
                       </span>
                       <MinimalDeltaBadge delta={deltas.produtividadeMailing} />
                     </div>
 
-                    <div className="min-w-0 flex flex-col items-start">
-                      <span className="text-xs text-slate-400 font-medium block truncate mb-1.5">
+                    <div className="min-w-0 p-3 rounded-xl bg-[#151515] border border-[#1E1E1E] flex flex-col justify-between items-start">
+                      <span className="text-[11px] text-slate-400 font-semibold block truncate">
                         % Atritados
                       </span>
-                      <span className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none mb-2">
+                      <span className="text-3xl font-black text-white tracking-tight leading-none my-2">
                         {displayedMetrics.atritados.toFixed(1).replace('.', ',')}%
                       </span>
                       <MinimalDeltaBadge
@@ -1515,17 +1527,17 @@ export const SiscomDashboardView: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center space-y-2 pt-0.5">
-                    {/* Donut Chart with Produtivo % Visible in Center */}
-                    <div className="relative w-28 h-28 flex items-center justify-center">
+                  <div className="flex flex-col items-center justify-between flex-1">
+                    {/* Compact Donut Chart with Produtivo % Visible in Center */}
+                    <div className="relative w-24 h-24 flex items-center justify-center">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
                             data={mailingPieData}
                             cx="50%"
                             cy="50%"
-                            innerRadius={32}
-                            outerRadius={50}
+                            innerRadius={28}
+                            outerRadius={44}
                             startAngle={90}
                             endAngle={-270}
                             paddingAngle={2}
@@ -1561,7 +1573,7 @@ export const SiscomDashboardView: React.FC = () => {
                     </div>
 
                     {/* Legend matching reference image */}
-                    <div className="flex items-center justify-center gap-3 text-[10px] text-slate-300 font-medium whitespace-nowrap">
+                    <div className="flex items-center justify-center gap-3 text-[10px] text-slate-300 font-medium whitespace-nowrap pt-1">
                       <span className="inline-flex items-center gap-1">
                         <span
                           className="w-2 h-2 rounded-full inline-block"

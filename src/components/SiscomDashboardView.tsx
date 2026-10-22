@@ -669,11 +669,36 @@ export const SiscomDashboardView: React.FC = () => {
       // Draw Delta Pill for Produtividade at top right of Mailing card
       drawDeltaPill(col3X + col3W - 64, topY + 22, deltas.produtividadeMailing);
 
-      // Draw Donut Chart in center of Mailing Card
-      const centerX = col3X + col3W / 2;
-      const centerY = topY + 84;
-      const outerR = 40;
-      const innerR = 25;
+      // Left Side: Vertical Legend (Produtivo, Improdutivo, Atritado)
+      const legItems = [
+        { label: 'Produtivo', color: MAILING_COLORS.produtivo },
+        { label: 'Improdutivo', color: MAILING_COLORS.improdutivo },
+        { label: 'Atritado', color: MAILING_COLORS.atritado }
+      ];
+      const dotR = 4;
+      const dotTextGap = 7;
+      const rowStep = 22;
+      const startLegY = topY + 72;
+      const legX = col3X + 16;
+
+      ctx.font = '500 11px Inter, system-ui, sans-serif';
+      legItems.forEach((item, idx) => {
+        const ly = startLegY + idx * rowStep;
+        ctx.beginPath();
+        ctx.arc(legX + dotR, ly - 3.5, dotR, 0, Math.PI * 2);
+        ctx.fillStyle = item.color;
+        ctx.fill();
+
+        ctx.fillStyle = '#CBD5E1';
+        ctx.textAlign = 'left';
+        ctx.fillText(item.label, legX + dotR * 2 + dotTextGap, ly);
+      });
+
+      // Right Side: Larger Donut Chart
+      const outerR = 46;
+      const innerR = 29;
+      const centerX = col3X + col3W - outerR - 20;
+      const centerY = topY + 94;
 
       const totalPie = mailingPieData.reduce((s, d) => s + d.value, 0);
       let currentAngle = -Math.PI / 2;
@@ -695,41 +720,10 @@ export const SiscomDashboardView: React.FC = () => {
       // Center Percentage of Produtivos
       const prodTxt = `${displayedMetrics.produtividadeMailing.toFixed(1).replace('.', ',')}%`;
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = '800 12px Inter, system-ui, sans-serif';
+      ctx.font = '800 13px Inter, system-ui, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(prodTxt, centerX, centerY + 4);
+      ctx.fillText(prodTxt, centerX, centerY + 4.5);
       ctx.textAlign = 'left';
-
-      // Bottom Legend: Produtivo | Improdutivo | Atritado (Dynamically measured & centered)
-      const legItems = [
-        { label: 'Produtivo', color: MAILING_COLORS.produtivo },
-        { label: 'Improdutivo', color: MAILING_COLORS.improdutivo },
-        { label: 'Atritado', color: MAILING_COLORS.atritado }
-      ];
-      const legY = topY + topBoxH - 14;
-      ctx.font = '500 10px Inter, system-ui, sans-serif';
-      const dotR = 3.5;
-      const dotTextGap = 5;
-      const itemGap = 12;
-
-      const itemWidths = legItems.map(
-        it => dotR * 2 + dotTextGap + ctx.measureText(it.label).width
-      );
-      const totalLegW =
-        itemWidths.reduce((s, w) => s + w, 0) + itemGap * (legItems.length - 1);
-      let curLegX = centerX - totalLegW / 2;
-
-      legItems.forEach((item, idx) => {
-        ctx.beginPath();
-        ctx.arc(curLegX + dotR, legY - 3.5, dotR, 0, Math.PI * 2);
-        ctx.fillStyle = item.color;
-        ctx.fill();
-
-        ctx.fillStyle = '#A3A3A3';
-        ctx.textAlign = 'left';
-        ctx.fillText(item.label, curLegX + dotR * 2 + dotTextGap, legY);
-        curLegX += itemWidths[idx] + itemGap;
-      });
     }
 
     // --- CHART BOX (LAST 7 DAYS: LEADS INDICADOS VS CONTAS ABERTAS) ---
@@ -1545,17 +1539,42 @@ export const SiscomDashboardView: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-between flex-1">
-                    {/* Compact Donut Chart with Produtivo % Visible in Center */}
-                    <div className="relative w-24 h-24 flex items-center justify-center">
+                  <div className="flex items-center justify-between gap-2 flex-1">
+                    {/* Left Side: Vertical Legend */}
+                    <div className="flex flex-col justify-center gap-2.5 text-[11px] text-slate-300 font-medium whitespace-nowrap">
+                      <span className="inline-flex items-center gap-2">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: MAILING_COLORS.produtivo }}
+                        />
+                        Produtivo
+                      </span>
+                      <span className="inline-flex items-center gap-2">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: MAILING_COLORS.improdutivo }}
+                        />
+                        Improdutivo
+                      </span>
+                      <span className="inline-flex items-center gap-2">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: MAILING_COLORS.atritado }}
+                        />
+                        Atritado
+                      </span>
+                    </div>
+
+                    {/* Right Side: Slightly Larger Donut Chart with Produtivo % Visible in Center */}
+                    <div className="relative w-28 h-28 flex items-center justify-center flex-shrink-0">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
                             data={mailingPieData}
                             cx="50%"
                             cy="50%"
-                            innerRadius={28}
-                            outerRadius={44}
+                            innerRadius={33}
+                            outerRadius={51}
                             startAngle={90}
                             endAngle={-270}
                             paddingAngle={2}
@@ -1584,35 +1603,10 @@ export const SiscomDashboardView: React.FC = () => {
                         </PieChart>
                       </ResponsiveContainer>
                       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        <span className="text-xs font-black text-white leading-none">
+                        <span className="text-[13px] font-black text-white leading-none">
                           {displayedMetrics.produtividadeMailing.toFixed(1).replace('.', ',')}%
                         </span>
                       </div>
-                    </div>
-
-                    {/* Legend matching reference image */}
-                    <div className="flex items-center justify-center gap-3 text-[10px] text-slate-300 font-medium whitespace-nowrap pt-1">
-                      <span className="inline-flex items-center gap-1">
-                        <span
-                          className="w-2 h-2 rounded-full inline-block"
-                          style={{ backgroundColor: MAILING_COLORS.produtivo }}
-                        />
-                        Produtivo
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <span
-                          className="w-2 h-2 rounded-full inline-block"
-                          style={{ backgroundColor: MAILING_COLORS.improdutivo }}
-                        />
-                        Improdutivo
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <span
-                          className="w-2 h-2 rounded-full inline-block"
-                          style={{ backgroundColor: MAILING_COLORS.atritado }}
-                        />
-                        Atritado
-                      </span>
                     </div>
                   </div>
                 )}

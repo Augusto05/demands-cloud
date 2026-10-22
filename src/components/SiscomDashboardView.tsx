@@ -42,7 +42,8 @@ import {
   calcDeltaPct,
   computeSystemAverages,
   getLast7DaysChartSeries,
-  isWeekend
+  isWeekend,
+  computeChartAxes
 } from '../services/siscomService';
 import { formatDateToYYYYMMDD } from '../services/dataService';
 
@@ -447,6 +448,11 @@ export const SiscomDashboardView: React.FC = () => {
     return getLast7DaysChartSeries(effectiveRecordsMap, activeRange.end);
   }, [effectiveRecordsMap, activeRange.end]);
 
+  // Harmonized proportional axes scales (prevents Contas line from floating above Leads)
+  const chartAxes = useMemo(() => {
+    return computeChartAxes(chart7DaysSeries, useDualAxis);
+  }, [chart7DaysSeries, useDualAxis]);
+
   // Sorted list of stored dates for quick history access (weekdays only)
   const historyList = useMemo(() => {
     return Object.values(store.records)
@@ -760,11 +766,7 @@ export const SiscomDashboardView: React.FC = () => {
     const plotW = plotRight - plotLeft;
     const plotH = plotBottom - plotTop;
 
-    const maxLeads = Math.max(10, ...chart7DaysSeries.map(d => d.leadsIndicados));
-    const maxContas = Math.max(4, ...chart7DaysSeries.map(d => d.contasAbertas));
-    const leadsAxisMax = Math.ceil(maxLeads * 1.2);
-    const contasAxisMax = Math.ceil(maxContas * 1.35);
-    const singleAxisMax = Math.ceil(Math.max(maxLeads, maxContas) * 1.2);
+    const { leadsAxisMax, contasAxisMax, singleAxisMax } = chartAxes;
 
     ctx.strokeStyle = '#222222';
     ctx.lineWidth = 1;
@@ -1239,11 +1241,7 @@ export const SiscomDashboardView: React.FC = () => {
     const plotW = plotRight - plotLeft;
     const plotH = plotBottom - plotTop;
 
-    const maxLeads = Math.max(10, ...chart7DaysSeries.map(d => d.leadsIndicados));
-    const maxContas = Math.max(4, ...chart7DaysSeries.map(d => d.contasAbertas));
-    const leadsAxisMax = Math.ceil(maxLeads * 1.2);
-    const contasAxisMax = Math.ceil(maxContas * 1.35);
-    const singleAxisMax = Math.ceil(Math.max(maxLeads, maxContas) * 1.2);
+    const { leadsAxisMax, contasAxisMax, singleAxisMax } = chartAxes;
 
     ctx.strokeStyle = '#222222';
     ctx.lineWidth = 1;
@@ -2360,7 +2358,7 @@ export const SiscomDashboardView: React.FC = () => {
                       tickLine={false}
                       axisLine={false}
                       tick={{ fontSize: 11, fill: '#737373' }}
-                      domain={[0, (dataMax: number) => Math.max(10, Math.ceil(dataMax * 1.2))]}
+                      domain={[0, chartAxes.leadsAxisMax]}
                     />
                     {useDualAxis && (
                       <YAxis
@@ -2370,7 +2368,7 @@ export const SiscomDashboardView: React.FC = () => {
                         tickLine={false}
                         axisLine={false}
                         tick={{ fontSize: 11, fill: '#737373' }}
-                        domain={[0, (dataMax: number) => Math.max(4, Math.ceil(dataMax * 1.35))]}
+                        domain={[0, chartAxes.contasAxisMax]}
                       />
                     )}
                     <Tooltip

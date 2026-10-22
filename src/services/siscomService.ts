@@ -270,3 +270,58 @@ export const getLast7DaysChartSeries = (
   // Reverse so the series is in chronological order (oldest to newest)
   return series.reverse();
 };
+
+export interface SiscomChartAxes {
+  leadsAxisMax: number;
+  contasAxisMax: number;
+  singleAxisMax: number;
+}
+
+/**
+ * Computes harmonized Y-axis scales for Leads and Contas so Contas Abertas
+ * is always visually proportioned and NEVER plotted higher than Leads Indicados.
+ */
+export const computeChartAxes = (
+  series: SiscomChartPoint[],
+  useDualAxis: boolean
+): SiscomChartAxes => {
+  const maxLeads = Math.max(10, ...series.map(d => d.leadsIndicados));
+  const maxContas = Math.max(4, ...series.map(d => d.contasAbertas));
+  const singleAxisMax = Math.ceil(Math.max(maxLeads, maxContas) * 1.2);
+  const leadsAxisMax = Math.ceil(maxLeads * 1.15);
+
+  if (!useDualAxis) {
+    return {
+      leadsAxisMax: singleAxisMax,
+      contasAxisMax: singleAxisMax,
+      singleAxisMax
+    };
+  }
+
+  // Calculate the max ratio of contas to leads across points where leads > 0
+  const maxDayRatio = Math.max(
+    0.08,
+    ...series.map(pt => {
+      if (pt.leadsIndicados > 0 && pt.contasAbertas > 0) {
+        return pt.contasAbertas / pt.leadsIndicados;
+      }
+      return 0;
+    })
+  );
+
+  // Guarantee that on the peak conversion day, Contas is plotted at most at 70% of Leads' height
+  // so the Contas line is ALWAYS visually lower than Leads Indicados!
+  const minContasMaxToStayBelow = Math.ceil((leadsAxisMax * maxDayRatio) / 0.7);
+  // Also give some comfortable headroom over maxContas
+  const naturalContasMax = Math.ceil(maxContas * 2.2);
+
+  const targetContasMax = Math.max(naturalContasMax, minContasMaxToStayBelow);
+  // Round up to nearest multiple of 4 for clean 4-step grid ticks
+  const contasAxisMax = Math.max(8, Math.ceil(targetContasMax / 4) * 4);
+
+  return {
+    leadsAxisMax,
+    contasAxisMax,
+    singleAxisMax
+  };
+};

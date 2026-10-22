@@ -71,6 +71,7 @@ export const saveSiscomRecord = async (
           leads_indicados: record.leadsIndicados,
           contas_abertas: record.contasAbertas,
           produtividade_mailing: record.produtividadeMailing,
+          improdutivos: record.improdutivos || 0,
           atritados: record.atritados,
           updated_at: new Date().toISOString()
         },
@@ -134,6 +135,7 @@ export interface SiscomComputedAverages {
   avgContasAbertas: number;
   avgConversaoPct: number;
   avgProdutividadeMailing: number;
+  avgImprodutivos: number;
   avgAtritados: number;
 }
 
@@ -149,6 +151,7 @@ export const computeSystemAverages = (
       r.leadsIndicados > 0 ||
       r.contasAbertas > 0 ||
       r.produtividadeMailing > 0 ||
+      (r.improdutivos || 0) > 0 ||
       r.atritados > 0
   );
 
@@ -162,6 +165,7 @@ export const computeSystemAverages = (
       avgContasAbertas: 0,
       avgConversaoPct: 0,
       avgProdutividadeMailing: 0,
+      avgImprodutivos: 0,
       avgAtritados: 0
     };
   }
@@ -170,6 +174,7 @@ export const computeSystemAverages = (
   const sumLeads = list.reduce((acc, r) => acc + (r.leadsIndicados || 0), 0);
   const sumContas = list.reduce((acc, r) => acc + (r.contasAbertas || 0), 0);
   const sumProdMailing = list.reduce((acc, r) => acc + (r.produtividadeMailing || 0), 0);
+  const sumImprodutivos = list.reduce((acc, r) => acc + (r.improdutivos || 0), 0);
   const sumAtritados = list.reduce((acc, r) => acc + (r.atritados || 0), 0);
 
   // For mediaHora, average across days that have mediaHora > 0
@@ -196,6 +201,7 @@ export const computeSystemAverages = (
     avgContasAbertas: sumContas / count,
     avgConversaoPct,
     avgProdutividadeMailing: sumProdMailing / count,
+    avgImprodutivos: sumImprodutivos / count,
     avgAtritados: sumAtritados / count
   };
 };

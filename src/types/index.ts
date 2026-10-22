@@ -245,7 +245,8 @@ export interface SiscomDailyRecord {
   totalTransferencias: number;
   leadsIndicados: number;
   contasAbertas: number;
-  produtividadeMailing: number; // % Produtividade do Mailing
+  produtividadeMailing: number; // % Produtividade do Mailing (Produtivo)
+  improdutivos?: number; // % Improdutivos do Mailing
   atritados: number; // % Atritados
   updatedAt: string; // ISO string
 }

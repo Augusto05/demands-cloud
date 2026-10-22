@@ -447,8 +447,8 @@ export const SiscomDashboardView: React.FC = () => {
     const scale = 2;
     const width = 920;
     const isDonut = mailingViewMode === 'grafico';
-    const topBoxH = isDonut ? 168 : 108;
-    const height = isDonut ? 600 : 540;
+    const topBoxH = isDonut ? 176 : 138;
+    const height = isDonut ? 610 : 570;
     const canvas = document.createElement('canvas');
     canvas.width = width * scale;
     canvas.height = height * scale;
@@ -500,7 +500,7 @@ export const SiscomDashboardView: React.FC = () => {
     ctx.fillStyle = '#E5E5E5';
     ctx.fillText(periodLabel, width - padX - badgeW + 12, 44);
 
-    // Helper for compact pill badge next to value
+    // Helper for compact pill badge below value
     const drawDeltaPill = (x: number, y: number, delta: number | null, invertColor = false) => {
       const val = delta === null || isNaN(delta) ? 0 : delta;
       const isZero = Math.abs(val) < 0.05;
@@ -514,9 +514,9 @@ export const SiscomDashboardView: React.FC = () => {
           : `${Math.abs(val).toFixed(1).replace('.', ',')}%`;
       const txt = `${arrow} ${formattedNum}`;
 
-      ctx.font = '700 9.5px Inter, system-ui, sans-serif';
-      const tw = ctx.measureText(txt).width + 10;
-      const th = 17;
+      ctx.font = '700 10px Inter, system-ui, sans-serif';
+      const tw = ctx.measureText(txt).width + 12;
+      const th = 18;
       roundRect(x, y - 13, tw, th, 5);
 
       ctx.fillStyle = isZero
@@ -535,7 +535,7 @@ export const SiscomDashboardView: React.FC = () => {
       ctx.stroke();
 
       ctx.fillStyle = isZero ? '#737373' : isGood ? '#34D399' : '#FB7185';
-      ctx.fillText(txt, x + 5, y - 1);
+      ctx.fillText(txt, x + 6, y - 1);
     };
 
     // 3 Section Blocks in 2 : 3 : 2 proportion
@@ -558,18 +558,18 @@ export const SiscomDashboardView: React.FC = () => {
       delta: number | null,
       invert = false
     ) => {
-      ctx.fillStyle = '#A3A3A3';
+      ctx.fillStyle = '#94A3B8';
       ctx.font = '500 11px Inter, system-ui, sans-serif';
       ctx.fillText(label, x, y);
 
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = '800 20px Inter, system-ui, sans-serif';
-      ctx.fillText(valueStr, x, y + 25);
-      const vw = ctx.measureText(valueStr).width;
-      drawDeltaPill(x + vw + 6, y + 22, delta, invert);
+      ctx.font = '900 28px Inter, system-ui, sans-serif';
+      ctx.fillText(valueStr, x, y + 32);
+
+      drawDeltaPill(x, y + 54, delta, invert);
     };
 
-    const mY = isDonut ? topY + 64 : topY + 46;
+    const mY = isDonut ? topY + 60 : topY + 52;
 
     // --- BLOCK 1: TRANSFERÊNCIAS ---
     roundRect(col1X, topY, col1W, topBoxH, 12);
@@ -578,9 +578,9 @@ export const SiscomDashboardView: React.FC = () => {
     ctx.strokeStyle = '#222222';
     ctx.stroke();
 
-    ctx.fillStyle = '#737373';
-    ctx.font = '800 10px Inter, system-ui, sans-serif';
-    ctx.fillText('TRANSFERÊNCIAS', col1X + 16, topY + 22);
+    ctx.fillStyle = '#E2E8F0';
+    ctx.font = '800 13px Inter, system-ui, sans-serif';
+    ctx.fillText('TRANSFERÊNCIAS', col1X + 16, topY + 26);
 
     const slot1W = Math.floor((col1W - 32) / 2);
     drawMetricSlot(
@@ -605,9 +605,9 @@ export const SiscomDashboardView: React.FC = () => {
     ctx.strokeStyle = '#222222';
     ctx.stroke();
 
-    ctx.fillStyle = '#737373';
-    ctx.font = '800 10px Inter, system-ui, sans-serif';
-    ctx.fillText('PRODUÇÃO', col2X + 16, topY + 22);
+    ctx.fillStyle = '#E2E8F0';
+    ctx.font = '800 13px Inter, system-ui, sans-serif';
+    ctx.fillText('PRODUÇÃO', col2X + 16, topY + 26);
 
     const slot2W = Math.floor((col2W - 32) / 3);
     drawMetricSlot(
@@ -639,9 +639,9 @@ export const SiscomDashboardView: React.FC = () => {
     ctx.strokeStyle = '#222222';
     ctx.stroke();
 
-    ctx.fillStyle = '#737373';
-    ctx.font = '800 10px Inter, system-ui, sans-serif';
-    ctx.fillText('MAILING', col3X + 16, topY + 22);
+    ctx.fillStyle = '#E2E8F0';
+    ctx.font = '800 13px Inter, system-ui, sans-serif';
+    ctx.fillText('MAILING', col3X + 16, topY + 26);
 
     if (!isDonut) {
       const slot3W = Math.floor((col3W - 32) / 2);
@@ -1411,87 +1411,77 @@ export const SiscomDashboardView: React.FC = () => {
             {/* 3 Balanced KPI Cards in 2 : 3 : 2 proportion */}
             <div className="grid grid-cols-1 lg:grid-cols-7 gap-3 items-stretch">
               {/* 1. TRANSFERÊNCIAS (2/7 width) */}
-              <div className="lg:col-span-2 p-4 rounded-2xl bg-[#101010] border border-[#222222] flex flex-col justify-between space-y-3">
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 block">
+              <div className="lg:col-span-2 p-5 rounded-2xl bg-[#101010] border border-[#222222] flex flex-col justify-between space-y-4">
+                <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-200 block">
                   Transferências
                 </span>
 
-                <div className="grid grid-cols-2 gap-2.5 my-auto">
-                  <div className="min-w-0">
-                    <span className="text-[11px] text-slate-400 font-medium block truncate">
+                <div className="grid grid-cols-2 gap-3 my-auto">
+                  <div className="min-w-0 flex flex-col items-start">
+                    <span className="text-xs text-slate-400 font-medium block truncate mb-1.5">
                       {activeRange.isSingleDay ? 'Total do Dia' : 'Total Período'}
                     </span>
-                    <div className="flex items-center gap-1.5 mt-1.5 whitespace-nowrap">
-                      <span className="text-xl font-black text-white tracking-tight leading-none">
-                        {displayedMetrics.totalTransferencias.toLocaleString('pt-BR')}
-                      </span>
-                      <MinimalDeltaBadge delta={deltas.transferencias} />
-                    </div>
+                    <span className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none mb-2">
+                      {displayedMetrics.totalTransferencias.toLocaleString('pt-BR')}
+                    </span>
+                    <MinimalDeltaBadge delta={deltas.transferencias} />
                   </div>
 
-                  <div className="min-w-0">
-                    <span className="text-[11px] text-slate-400 font-medium block truncate">
+                  <div className="min-w-0 flex flex-col items-start">
+                    <span className="text-xs text-slate-400 font-medium block truncate mb-1.5">
                       Média / Hora
                     </span>
-                    <div className="flex items-center gap-1.5 mt-1.5 whitespace-nowrap">
-                      <span className="text-xl font-black text-white tracking-tight leading-none">
-                        {displayedMetrics.mediaHora.toFixed(1).replace('.', ',')}
-                      </span>
-                      <MinimalDeltaBadge delta={deltas.mediaHora} />
-                    </div>
+                    <span className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none mb-2">
+                      {displayedMetrics.mediaHora.toFixed(1).replace('.', ',')}
+                    </span>
+                    <MinimalDeltaBadge delta={deltas.mediaHora} />
                   </div>
                 </div>
               </div>
 
               {/* 2. PRODUÇÃO (3/7 width) */}
-              <div className="lg:col-span-3 p-4 rounded-2xl bg-[#101010] border border-[#222222] flex flex-col justify-between space-y-3">
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 block">
+              <div className="lg:col-span-3 p-5 rounded-2xl bg-[#101010] border border-[#222222] flex flex-col justify-between space-y-4">
+                <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-200 block">
                   Produção
                 </span>
 
-                <div className="grid grid-cols-3 gap-2.5 my-auto">
-                  <div className="min-w-0">
-                    <span className="text-[11px] text-slate-400 font-medium block truncate">
+                <div className="grid grid-cols-3 gap-3 my-auto">
+                  <div className="min-w-0 flex flex-col items-start">
+                    <span className="text-xs text-slate-400 font-medium block truncate mb-1.5">
                       Leads Indicados
                     </span>
-                    <div className="flex items-center gap-1.5 mt-1.5 whitespace-nowrap">
-                      <span className="text-xl font-black text-white tracking-tight leading-none">
-                        {displayedMetrics.leadsIndicados.toLocaleString('pt-BR')}
-                      </span>
-                      <MinimalDeltaBadge delta={deltas.leadsIndicados} />
-                    </div>
+                    <span className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none mb-2">
+                      {displayedMetrics.leadsIndicados.toLocaleString('pt-BR')}
+                    </span>
+                    <MinimalDeltaBadge delta={deltas.leadsIndicados} />
                   </div>
 
-                  <div className="min-w-0">
-                    <span className="text-[11px] text-slate-400 font-medium block truncate">
+                  <div className="min-w-0 flex flex-col items-start">
+                    <span className="text-xs text-slate-400 font-medium block truncate mb-1.5">
                       Contas Abertas
                     </span>
-                    <div className="flex items-center gap-1.5 mt-1.5 whitespace-nowrap">
-                      <span className="text-xl font-black text-white tracking-tight leading-none">
-                        {displayedMetrics.contasAbertas.toLocaleString('pt-BR')}
-                      </span>
-                      <MinimalDeltaBadge delta={deltas.contasAbertas} />
-                    </div>
+                    <span className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none mb-2">
+                      {displayedMetrics.contasAbertas.toLocaleString('pt-BR')}
+                    </span>
+                    <MinimalDeltaBadge delta={deltas.contasAbertas} />
                   </div>
 
-                  <div className="min-w-0">
-                    <span className="text-[11px] text-slate-400 font-medium block truncate">
+                  <div className="min-w-0 flex flex-col items-start">
+                    <span className="text-xs text-slate-400 font-medium block truncate mb-1.5">
                       % Conversão
                     </span>
-                    <div className="flex items-center gap-1.5 mt-1.5 whitespace-nowrap">
-                      <span className="text-xl font-black text-white tracking-tight leading-none">
-                        {displayedMetrics.conversaoPct.toFixed(1).replace('.', ',')}%
-                      </span>
-                      <MinimalDeltaBadge delta={deltas.conversaoPct} />
-                    </div>
+                    <span className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none mb-2">
+                      {displayedMetrics.conversaoPct.toFixed(1).replace('.', ',')}%
+                    </span>
+                    <MinimalDeltaBadge delta={deltas.conversaoPct} />
                   </div>
                 </div>
               </div>
 
               {/* 3. MAILING (2/7 width) - Toggles between Padrão and Donut Chart */}
-              <div className="lg:col-span-2 p-4 rounded-2xl bg-[#101010] border border-[#222222] flex flex-col justify-between space-y-2.5">
+              <div className="lg:col-span-2 p-5 rounded-2xl bg-[#101010] border border-[#222222] flex flex-col justify-between space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 block">
+                  <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-200 block">
                     Mailing
                   </span>
                   {mailingViewMode === 'grafico' && (
@@ -1500,32 +1490,28 @@ export const SiscomDashboardView: React.FC = () => {
                 </div>
 
                 {mailingViewMode === 'padrao' ? (
-                  <div className="grid grid-cols-2 gap-2.5 my-auto">
-                    <div className="min-w-0">
-                      <span className="text-[11px] text-slate-400 font-medium block truncate">
+                  <div className="grid grid-cols-2 gap-3 my-auto">
+                    <div className="min-w-0 flex flex-col items-start">
+                      <span className="text-xs text-slate-400 font-medium block truncate mb-1.5">
                         % Produtividade
                       </span>
-                      <div className="flex items-center gap-1.5 mt-1.5 whitespace-nowrap">
-                        <span className="text-xl font-black text-white tracking-tight leading-none">
-                          {displayedMetrics.produtividadeMailing.toFixed(1).replace('.', ',')}%
-                        </span>
-                        <MinimalDeltaBadge delta={deltas.produtividadeMailing} />
-                      </div>
+                      <span className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none mb-2">
+                        {displayedMetrics.produtividadeMailing.toFixed(1).replace('.', ',')}%
+                      </span>
+                      <MinimalDeltaBadge delta={deltas.produtividadeMailing} />
                     </div>
 
-                    <div className="min-w-0">
-                      <span className="text-[11px] text-slate-400 font-medium block truncate">
+                    <div className="min-w-0 flex flex-col items-start">
+                      <span className="text-xs text-slate-400 font-medium block truncate mb-1.5">
                         % Atritados
                       </span>
-                      <div className="flex items-center gap-1.5 mt-1.5 whitespace-nowrap">
-                        <span className="text-xl font-black text-white tracking-tight leading-none">
-                          {displayedMetrics.atritados.toFixed(1).replace('.', ',')}%
-                        </span>
-                        <MinimalDeltaBadge
-                          delta={deltas.atritados}
-                          invertColor={invertAtritadosColor}
-                        />
-                      </div>
+                      <span className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none mb-2">
+                        {displayedMetrics.atritados.toFixed(1).replace('.', ',')}%
+                      </span>
+                      <MinimalDeltaBadge
+                        delta={deltas.atritados}
+                        invertColor={invertAtritadosColor}
+                      />
                     </div>
                   </div>
                 ) : (

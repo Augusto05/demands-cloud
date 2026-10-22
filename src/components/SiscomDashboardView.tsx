@@ -759,8 +759,8 @@ export const SiscomDashboardView: React.FC = () => {
       chartBoxY + 26
     );
 
-    const plotLeft = padX + 44;
-    const plotRight = width - padX - 44;
+    const plotLeft = padX + 20;
+    const plotRight = width - padX - 20;
     const plotTop = chartBoxY + 50;
     const plotBottom = chartBoxY + chartBoxH - 48;
     const plotW = plotRight - plotLeft;
@@ -768,6 +768,7 @@ export const SiscomDashboardView: React.FC = () => {
 
     const { leadsAxisMax, contasAxisMax, singleAxisMax } = chartAxes;
 
+    // Subtle horizontal grid lines (clean indicator style without axis numbers)
     ctx.strokeStyle = '#222222';
     ctx.lineWidth = 1;
     for (let i = 0; i <= 4; i++) {
@@ -776,19 +777,6 @@ export const SiscomDashboardView: React.FC = () => {
       ctx.moveTo(plotLeft, y);
       ctx.lineTo(plotRight, y);
       ctx.stroke();
-
-      const leftVal = Math.round(((useDualAxis ? leadsAxisMax : singleAxisMax) * i) / 4);
-      ctx.fillStyle = '#737373';
-      ctx.font = '500 10px Inter, system-ui, sans-serif';
-      ctx.textAlign = 'right';
-      ctx.fillText(String(leftVal), plotLeft - 10, y + 3);
-
-      if (useDualAxis) {
-        const rightVal = Math.round((contasAxisMax * i) / 4);
-        ctx.textAlign = 'left';
-        ctx.fillStyle = '#737373';
-        ctx.fillText(String(rightVal), plotRight + 10, y + 3);
-      }
     }
     ctx.textAlign = 'left';
 
@@ -878,11 +866,11 @@ export const SiscomDashboardView: React.FC = () => {
 
     const chartLegItems = [
       {
-        label: useDualAxis ? 'Leads Indicados (Eixo Esq.)' : 'Leads Indicados',
+        label: 'Leads Indicados',
         color: '#FACC15'
       },
       {
-        label: useDualAxis ? 'Contas Abertas (Eixo Dir.)' : 'Contas Abertas',
+        label: 'Contas Abertas',
         color: '#E5E5E5'
       }
     ];
@@ -1234,8 +1222,8 @@ export const SiscomDashboardView: React.FC = () => {
       chartBoxY + 23
     );
 
-    const plotLeft = padX + 38;
-    const plotRight = width - padX - 38;
+    const plotLeft = padX + 18;
+    const plotRight = width - padX - 18;
     const plotTop = chartBoxY + 44;
     const plotBottom = chartBoxY + chartBoxH - 42;
     const plotW = plotRight - plotLeft;
@@ -1243,6 +1231,7 @@ export const SiscomDashboardView: React.FC = () => {
 
     const { leadsAxisMax, contasAxisMax, singleAxisMax } = chartAxes;
 
+    // Subtle horizontal grid lines (clean indicator style without axis numbers)
     ctx.strokeStyle = '#222222';
     ctx.lineWidth = 1;
     for (let i = 0; i <= 4; i++) {
@@ -1251,19 +1240,6 @@ export const SiscomDashboardView: React.FC = () => {
       ctx.moveTo(plotLeft, y);
       ctx.lineTo(plotRight, y);
       ctx.stroke();
-
-      const leftVal = Math.round(((useDualAxis ? leadsAxisMax : singleAxisMax) * i) / 4);
-      ctx.fillStyle = '#737373';
-      ctx.font = '500 10px Inter, system-ui, sans-serif';
-      ctx.textAlign = 'right';
-      ctx.fillText(String(leftVal), plotLeft - 8, y + 3);
-
-      if (useDualAxis) {
-        const rightVal = Math.round((contasAxisMax * i) / 4);
-        ctx.textAlign = 'left';
-        ctx.fillStyle = '#737373';
-        ctx.fillText(String(rightVal), plotRight + 8, y + 3);
-      }
     }
     ctx.textAlign = 'left';
 
@@ -1366,11 +1342,11 @@ export const SiscomDashboardView: React.FC = () => {
     // Chart Legend at the bottom
     const chartLegItems = [
       {
-        label: useDualAxis ? 'Leads (Eixo Esq.)' : 'Leads Indicados',
+        label: 'Leads Indicados',
         color: '#FACC15'
       },
       {
-        label: useDualAxis ? 'Contas (Eixo Dir.)' : 'Contas Abertas',
+        label: 'Contas Abertas',
         color: '#E5E5E5'
       }
     ];
@@ -2342,7 +2318,7 @@ export const SiscomDashboardView: React.FC = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={chart7DaysSeries}
-                    margin={{ top: 22, right: 12, left: -16, bottom: 4 }}
+                    margin={{ top: 22, right: 14, left: 14, bottom: 4 }}
                   >
                     <CartesianGrid stroke="#222222" strokeDasharray="0" vertical={false} />
                     <XAxis
@@ -2354,23 +2330,15 @@ export const SiscomDashboardView: React.FC = () => {
                     />
                     <YAxis
                       yAxisId="left"
-                      stroke="#525252"
-                      tickLine={false}
-                      axisLine={false}
-                      tick={{ fontSize: 11, fill: '#737373' }}
+                      hide={true}
                       domain={[0, chartAxes.leadsAxisMax]}
                     />
-                    {useDualAxis && (
-                      <YAxis
-                        yAxisId="right"
-                        orientation="right"
-                        stroke="#525252"
-                        tickLine={false}
-                        axisLine={false}
-                        tick={{ fontSize: 11, fill: '#737373' }}
-                        domain={[0, chartAxes.contasAxisMax]}
-                      />
-                    )}
+                    <YAxis
+                      yAxisId="right"
+                      orientation="right"
+                      hide={true}
+                      domain={[0, chartAxes.contasAxisMax]}
+                    />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: '#101010',
@@ -2441,14 +2409,14 @@ export const SiscomDashboardView: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-[#FACC15] inline-block" />
                   <span className="font-semibold text-slate-300">
-                    Leads Indicados {useDualAxis && <span className="text-slate-500 font-normal">(Eixo Esq.)</span>}
+                    Leads Indicados
                   </span>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-neutral-200 inline-block" />
                   <span className="font-semibold text-slate-300">
-                    Contas Abertas {useDualAxis && <span className="text-slate-500 font-normal">(Eixo Dir.)</span>}
+                    Contas Abertas
                   </span>
                 </div>
               </div>

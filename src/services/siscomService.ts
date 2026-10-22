@@ -278,8 +278,9 @@ export interface SiscomChartAxes {
 }
 
 /**
- * Computes harmonized Y-axis scales for Leads and Contas so Contas Abertas
- * is always visually proportioned and NEVER plotted higher than Leads Indicados.
+ * Computes harmonized proportional Y-axis scales for Leads and Contas.
+ * Keeps Contas running closely beneath Leads (smaller proportion/gap)
+ * while guaranteeing that Contas is NEVER visually plotted above Leads.
  */
 export const computeChartAxes = (
   series: SiscomChartPoint[],
@@ -287,8 +288,7 @@ export const computeChartAxes = (
 ): SiscomChartAxes => {
   const maxLeads = Math.max(10, ...series.map(d => d.leadsIndicados));
   const maxContas = Math.max(4, ...series.map(d => d.contasAbertas));
-  const singleAxisMax = Math.ceil(Math.max(maxLeads, maxContas) * 1.2);
-  const leadsAxisMax = Math.ceil(maxLeads * 1.15);
+  const singleAxisMax = Math.ceil(Math.max(maxLeads, maxContas) * 1.15);
 
   if (!useDualAxis) {
     return {
@@ -298,26 +298,26 @@ export const computeChartAxes = (
     };
   }
 
-  // Calculate the max ratio of contas to leads across points where leads > 0
-  const maxDayRatio = Math.max(
-    0.08,
-    ...series.map(pt => {
-      if (pt.leadsIndicados > 0 && pt.contasAbertas > 0) {
-        return pt.contasAbertas / pt.leadsIndicados;
-      }
-      return 0;
-    })
-  );
+  // Leads scale with ~16% headroom
+  const leadsAxisMax = Math.ceil(maxLeads * 1.16);
 
-  // Guarantee that on the peak conversion day, Contas is plotted at most at 70% of Leads' height
-  // so the Contas line is ALWAYS visually lower than Leads Indicados!
-  const minContasMaxToStayBelow = Math.ceil((leadsAxisMax * maxDayRatio) / 0.7);
-  // Also give some comfortable headroom over maxContas
-  const naturalContasMax = Math.ceil(maxContas * 2.2);
+  // Guarantee that on the peak conversion day, Contas stays comfortably close beneath Leads
+  // (at least ~6.5% vertical gap, preventing lines from crossing or overlapping point numbers):
+  const requiredContasMaxPerDay = series.map(pt => {
+    if (pt.leadsIndicados > 0 && pt.contasAbertas > 0) {
+      const leadsFraction = pt.leadsIndicados / leadsAxisMax;
+      const targetMaxContasFraction = Math.max(0.08, leadsFraction - 0.065);
+      return pt.contasAbertas / targetMaxContasFraction;
+    }
+    return 0;
+  });
+
+  const minContasMaxToStayBelow = Math.max(0, ...requiredContasMaxPerDay);
+  // Also give standard headroom so Contas doesn't exceed 50% of chart height on its own peak
+  const naturalContasMax = maxContas / 0.50;
 
   const targetContasMax = Math.max(naturalContasMax, minContasMaxToStayBelow);
-  // Round up to nearest multiple of 4 for clean 4-step grid ticks
-  const contasAxisMax = Math.max(8, Math.ceil(targetContasMax / 4) * 4);
+  const contasAxisMax = Math.max(8, Math.ceil(targetContasMax));
 
   return {
     leadsAxisMax,

@@ -555,29 +555,22 @@ export const SiscomDashboardView: React.FC = () => {
 
     const drawMetricBox = (
       x: number,
-      w: number,
+      _w: number,
       label: string,
       valueStr: string,
       delta: number | null,
       invert = false
     ) => {
-      roundRect(x, innerCardTop, w, innerCardH, 10);
-      ctx.fillStyle = '#151515';
-      ctx.fill();
-      ctx.strokeStyle = '#1F1F1F';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-
       ctx.fillStyle = '#94A3B8';
       ctx.font = '600 11px Inter, system-ui, sans-serif';
-      ctx.fillText(label, x + 12, innerCardTop + 20);
+      ctx.fillText(label, x + 2, innerCardTop + 18);
 
       ctx.fillStyle = '#FFFFFF';
       ctx.font = '900 30px Inter, system-ui, sans-serif';
-      const centerValY = innerCardTop + Math.floor(innerCardH / 2) + 10;
-      ctx.fillText(valueStr, x + 12, centerValY);
+      const centerValY = innerCardTop + Math.floor(innerCardH / 2) + 8;
+      ctx.fillText(valueStr, x + 2, centerValY);
 
-      drawDeltaPill(x + 12, innerCardTop + innerCardH - 10, delta, invert);
+      drawDeltaPill(x + 2, innerCardTop + innerCardH - 8, delta, invert);
     };
 
     // --- BLOCK 1: TRANSFERÊNCIAS ---
@@ -707,26 +700,35 @@ export const SiscomDashboardView: React.FC = () => {
       ctx.fillText(prodTxt, centerX, centerY + 4);
       ctx.textAlign = 'left';
 
-      // Bottom Legend: Produtivo | Improdutivo | Atritado
+      // Bottom Legend: Produtivo | Improdutivo | Atritado (Dynamically measured & centered)
       const legItems = [
         { label: 'Produtivo', color: MAILING_COLORS.produtivo },
         { label: 'Improdutivo', color: MAILING_COLORS.improdutivo },
         { label: 'Atritado', color: MAILING_COLORS.atritado }
       ];
-      const legY = topY + topBoxH - 12;
-      const legStartX = col3X + 18;
-      const legSpacing = Math.floor((col3W - 32) / 3);
+      const legY = topY + topBoxH - 14;
+      ctx.font = '500 10px Inter, system-ui, sans-serif';
+      const dotR = 3.5;
+      const dotTextGap = 5;
+      const itemGap = 12;
+
+      const itemWidths = legItems.map(
+        it => dotR * 2 + dotTextGap + ctx.measureText(it.label).width
+      );
+      const totalLegW =
+        itemWidths.reduce((s, w) => s + w, 0) + itemGap * (legItems.length - 1);
+      let curLegX = centerX - totalLegW / 2;
 
       legItems.forEach((item, idx) => {
-        const lx = legStartX + idx * legSpacing;
         ctx.beginPath();
-        ctx.arc(lx, legY - 3.5, 4, 0, Math.PI * 2);
+        ctx.arc(curLegX + dotR, legY - 3.5, dotR, 0, Math.PI * 2);
         ctx.fillStyle = item.color;
         ctx.fill();
 
         ctx.fillStyle = '#A3A3A3';
-        ctx.font = '500 10px Inter, system-ui, sans-serif';
-        ctx.fillText(item.label, lx + 7, legY);
+        ctx.textAlign = 'left';
+        ctx.fillText(item.label, curLegX + dotR * 2 + dotTextGap, legY);
+        curLegX += itemWidths[idx] + itemGap;
       });
     }
 
@@ -871,24 +873,40 @@ export const SiscomDashboardView: React.FC = () => {
       }
     });
 
-    // Bottom Legend
-    ctx.textAlign = 'left';
+    // Bottom Legend (Dynamically measured & centered)
+    const chartLegItems = [
+      {
+        label: useDualAxis ? 'Leads Indicados (Eixo Esq.)' : 'Leads Indicados',
+        color: '#FACC15'
+      },
+      {
+        label: useDualAxis ? 'Contas Abertas (Eixo Dir.)' : 'Contas Abertas',
+        color: '#E5E5E5'
+      }
+    ];
     const legY = chartBoxY + chartBoxH - 14;
-    ctx.fillStyle = '#FACC15';
-    ctx.beginPath();
-    ctx.arc(width / 2 - 140, legY - 4, 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#D4D4D4';
     ctx.font = '600 11px Inter, system-ui, sans-serif';
-    ctx.fillText('Leads Indicados (Eixo Esq.)', width / 2 - 130, legY);
+    const cDotR = 4;
+    const cDotTextGap = 6;
+    const cItemGap = 28;
+    const cItemWidths = chartLegItems.map(
+      it => cDotR * 2 + cDotTextGap + ctx.measureText(it.label).width
+    );
+    const totalChartLegW =
+      cItemWidths.reduce((s, w) => s + w, 0) + cItemGap * (chartLegItems.length - 1);
+    let curChartLegX = width / 2 - totalChartLegW / 2;
 
-    ctx.fillStyle = '#E5E5E5';
-    ctx.beginPath();
-    ctx.arc(width / 2 + 30, legY - 4, 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#D4D4D4';
-    ctx.font = '600 11px Inter, system-ui, sans-serif';
-    ctx.fillText('Contas Abertas (Eixo Dir.)', width / 2 + 40, legY);
+    chartLegItems.forEach((item, idx) => {
+      ctx.beginPath();
+      ctx.arc(curChartLegX + cDotR, legY - 3.5, cDotR, 0, Math.PI * 2);
+      ctx.fillStyle = item.color;
+      ctx.fill();
+
+      ctx.fillStyle = '#D4D4D4';
+      ctx.textAlign = 'left';
+      ctx.fillText(item.label, curChartLegX + cDotR * 2 + cDotTextGap, legY);
+      curChartLegX += cItemWidths[idx] + cItemGap;
+    });
 
     return canvas;
   };
@@ -1428,8 +1446,8 @@ export const SiscomDashboardView: React.FC = () => {
                   Transferências
                 </span>
 
-                <div className="grid grid-cols-2 gap-2.5 flex-1">
-                  <div className="min-w-0 p-3 rounded-xl bg-[#151515] border border-[#1E1E1E] flex flex-col justify-between items-start">
+                <div className="grid grid-cols-2 gap-3 flex-1">
+                  <div className="min-w-0 py-1.5 flex flex-col justify-between items-start">
                     <span className="text-[11px] text-slate-400 font-semibold block truncate">
                       {activeRange.isSingleDay ? 'Total do Dia' : 'Total Período'}
                     </span>
@@ -1439,7 +1457,7 @@ export const SiscomDashboardView: React.FC = () => {
                     <MinimalDeltaBadge delta={deltas.transferencias} />
                   </div>
 
-                  <div className="min-w-0 p-3 rounded-xl bg-[#151515] border border-[#1E1E1E] flex flex-col justify-between items-start">
+                  <div className="min-w-0 py-1.5 flex flex-col justify-between items-start">
                     <span className="text-[11px] text-slate-400 font-semibold block truncate">
                       Média / Hora
                     </span>
@@ -1457,8 +1475,8 @@ export const SiscomDashboardView: React.FC = () => {
                   Produção
                 </span>
 
-                <div className="grid grid-cols-3 gap-2.5 flex-1">
-                  <div className="min-w-0 p-3 rounded-xl bg-[#151515] border border-[#1E1E1E] flex flex-col justify-between items-start">
+                <div className="grid grid-cols-3 gap-3 flex-1">
+                  <div className="min-w-0 py-1.5 flex flex-col justify-between items-start">
                     <span className="text-[11px] text-slate-400 font-semibold block truncate">
                       Leads Indicados
                     </span>
@@ -1468,7 +1486,7 @@ export const SiscomDashboardView: React.FC = () => {
                     <MinimalDeltaBadge delta={deltas.leadsIndicados} />
                   </div>
 
-                  <div className="min-w-0 p-3 rounded-xl bg-[#151515] border border-[#1E1E1E] flex flex-col justify-between items-start">
+                  <div className="min-w-0 py-1.5 flex flex-col justify-between items-start">
                     <span className="text-[11px] text-slate-400 font-semibold block truncate">
                       Contas Abertas
                     </span>
@@ -1478,7 +1496,7 @@ export const SiscomDashboardView: React.FC = () => {
                     <MinimalDeltaBadge delta={deltas.contasAbertas} />
                   </div>
 
-                  <div className="min-w-0 p-3 rounded-xl bg-[#151515] border border-[#1E1E1E] flex flex-col justify-between items-start">
+                  <div className="min-w-0 py-1.5 flex flex-col justify-between items-start">
                     <span className="text-[11px] text-slate-400 font-semibold block truncate">
                       % Conversão
                     </span>
@@ -1502,8 +1520,8 @@ export const SiscomDashboardView: React.FC = () => {
                 </div>
 
                 {mailingViewMode === 'padrao' ? (
-                  <div className="grid grid-cols-2 gap-2.5 flex-1">
-                    <div className="min-w-0 p-3 rounded-xl bg-[#151515] border border-[#1E1E1E] flex flex-col justify-between items-start">
+                  <div className="grid grid-cols-2 gap-3 flex-1">
+                    <div className="min-w-0 py-1.5 flex flex-col justify-between items-start">
                       <span className="text-[11px] text-slate-400 font-semibold block truncate">
                         % Produtividade
                       </span>
@@ -1513,7 +1531,7 @@ export const SiscomDashboardView: React.FC = () => {
                       <MinimalDeltaBadge delta={deltas.produtividadeMailing} />
                     </div>
 
-                    <div className="min-w-0 p-3 rounded-xl bg-[#151515] border border-[#1E1E1E] flex flex-col justify-between items-start">
+                    <div className="min-w-0 py-1.5 flex flex-col justify-between items-start">
                       <span className="text-[11px] text-slate-400 font-semibold block truncate">
                         % Atritados
                       </span>

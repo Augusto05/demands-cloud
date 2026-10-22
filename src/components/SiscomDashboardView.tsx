@@ -41,7 +41,8 @@ import {
   calcConversaoPct,
   calcDeltaPct,
   computeSystemAverages,
-  getLast7DaysChartSeries
+  getLast7DaysChartSeries,
+  isWeekend
 } from '../services/siscomService';
 import { formatDateToYYYYMMDD } from '../services/dataService';
 
@@ -57,19 +58,26 @@ const MAILING_COLORS = {
 
 export const SiscomDashboardView: React.FC = () => {
   const todayStr = useMemo(() => formatDateToYYYYMMDD(new Date()), []);
+  const defaultDateStr = useMemo(() => {
+    const d = new Date();
+    while (d.getDay() === 0 || d.getDay() === 6) {
+      d.setDate(d.getDate() - 1);
+    }
+    return formatDateToYYYYMMDD(d);
+  }, []);
 
   // Store state synced with Supabase
   const [store, setStore] = useState<SiscomStore>(getStoredSiscomStore);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
 
-  // Selected Date for Daily Input / Editing
-  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  // Selected Date for Daily Input / Editing (defaults to last business day)
+  const [selectedDate, setSelectedDate] = useState<string>(defaultDateStr);
 
   // Filter Mode for Dashboard Visualization
   const [filterMode, setFilterMode] = useState<FilterMode>('dia');
-  const [customStartDate, setCustomStartDate] = useState<string>(todayStr);
-  const [customEndDate, setCustomEndDate] = useState<string>(todayStr);
+  const [customStartDate, setCustomStartDate] = useState<string>(defaultDateStr);
+  const [customEndDate, setCustomEndDate] = useState<string>(defaultDateStr);
 
   // Form Inputs for selectedDate
   const [horasRodadas, setHorasRodadas] = useState<string>('');
@@ -232,11 +240,14 @@ export const SiscomDashboardView: React.FC = () => {
     }
   };
 
-  // Date navigation helpers
+  // Date navigation helpers (skips weekends: Saturday & Sunday)
   const shiftSelectedDate = (daysDelta: number) => {
     const [y, m, d] = selectedDate.split('-').map(Number);
     const dt = new Date(y, (m || 1) - 1, d || 1);
     dt.setDate(dt.getDate() + daysDelta);
+    while (dt.getDay() === 0 || dt.getDay() === 6) {
+      dt.setDate(dt.getDate() + (daysDelta >= 0 ? 1 : -1));
+    }
     const nextDateStr = formatDateToYYYYMMDD(dt);
     setSelectedDate(nextDateStr);
     if (filterMode === 'dia' || filterMode === 'ontem') {
@@ -248,15 +259,18 @@ export const SiscomDashboardView: React.FC = () => {
     setFilterMode(mode);
     const today = new Date();
     if (mode === 'ontem') {
-      const yest = new Date(today);
-      yest.setDate(yest.getDate() - 1);
-      const yestStr = formatDateToYYYYMMDD(yest);
-      setSelectedDate(yestStr);
+      const prev = new Date(today);
+      prev.setDate(prev.getDate() - 1);
+      while (prev.getDay() === 0 || prev.getDay() === 6) {
+        prev.setDate(prev.getDate() - 1);
+      }
+      const prevStr = formatDateToYYYYMMDD(prev);
+      setSelectedDate(prevStr);
     } else if (mode === '7dias') {
       const d7 = new Date(today);
       d7.setDate(d7.getDate() - 6);
       setCustomStartDate(formatDateToYYYYMMDD(d7));
-      setCustomEndDate(todayStr);
+      setCustomEndDate(defaultDateStr);
     } else if (mode === 'mes') {
       const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
       const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
@@ -282,10 +296,11 @@ export const SiscomDashboardView: React.FC = () => {
     return computeSystemAverages(effectiveRecordsMap);
   }, [effectiveRecordsMap]);
 
-  // Compute displayed metrics for activeRange
+  // Compute displayed metrics for activeRange (excluding weekends)
   const displayedMetrics = useMemo(() => {
     if (activeRange.isSingleDay) {
-      const rec = effectiveRecordsMap[activeRange.start];
+      const isWk = isWeekend(activeRange.start);
+      const rec = isWk ? undefined : effectiveRecordsMap[activeRange.start];
       const totalTransf = rec ? rec.totalTransferencias : 0;
       const horas = rec ? rec.horasRodadas : 0;
       const mediaH = calcMediaHora(totalTransf, horas);
@@ -316,6 +331,7 @@ export const SiscomDashboardView: React.FC = () => {
       r =>
         r.date >= activeRange.start &&
         r.date <= activeRange.end &&
+        !isWeekend(r.date) &&
         (r.totalTransferencias > 0 ||
           r.leadsIndicados > 0 ||
           r.contasAbertas > 0 ||
@@ -431,17 +447,18 @@ export const SiscomDashboardView: React.FC = () => {
     return getLast7DaysChartSeries(effectiveRecordsMap, activeRange.end);
   }, [effectiveRecordsMap, activeRange.end]);
 
-  // Sorted list of stored dates for quick history access
+  // Sorted list of stored dates for quick history access (weekdays only)
   const historyList = useMemo(() => {
     return Object.values(store.records)
       .filter(
         r =>
-          r.totalTransferencias > 0 ||
-          r.leadsIndicados > 0 ||
-          r.contasAbertas > 0 ||
-          r.produtividadeMailing > 0 ||
-          (r.improdutivos || 0) > 0 ||
-          r.atritados > 0
+          !isWeekend(r.date) &&
+          (r.totalTransferencias > 0 ||
+            r.leadsIndicados > 0 ||
+            r.contasAbertas > 0 ||
+            r.produtividadeMailing > 0 ||
+            (r.improdutivos || 0) > 0 ||
+            r.atritados > 0)
       )
       .sort((a, b) => (a.date < b.date ? 1 : -1));
   }, [store.records]);
@@ -487,7 +504,7 @@ export const SiscomDashboardView: React.FC = () => {
 
     ctx.fillStyle = '#737373';
     ctx.font = '500 11px Inter, system-ui, sans-serif';
-    ctx.fillText('Comparativo vs. média histórica', padX, 55);
+    ctx.fillText('Dia atual vs. média histórica', padX, 55);
 
     // Date Badge on Right
     const periodLabel = activeRange.isSingleDay
@@ -731,7 +748,7 @@ export const SiscomDashboardView: React.FC = () => {
     ctx.fillStyle = '#D4D4D4';
     ctx.font = '700 11px Inter, system-ui, sans-serif';
     ctx.fillText(
-      'EVOLUÇÃO ÚLTIMOS 7 DIAS — LEADS INDICADOS VS. CONTAS ABERTAS',
+      'EVOLUÇÃO ÚLTIMOS 7 DIAS ÚTEIS — LEADS INDICADOS VS. CONTAS ABERTAS',
       padX + 16,
       chartBoxY + 26
     );
@@ -943,7 +960,7 @@ export const SiscomDashboardView: React.FC = () => {
 
     ctx.fillStyle = '#737373';
     ctx.font = '500 11px Inter, system-ui, sans-serif';
-    ctx.fillText('Comparativo vs. média histórica', padX, 54);
+    ctx.fillText('Dia atual vs. média histórica', padX, 54);
 
     // Date Badge on Right
     const periodLabel = activeRange.isSingleDay
@@ -1210,7 +1227,7 @@ export const SiscomDashboardView: React.FC = () => {
     ctx.fillStyle = '#D4D4D4';
     ctx.font = '700 11px Inter, system-ui, sans-serif';
     ctx.fillText(
-      'EVOLUÇÃO ÚLTIMOS 7 DIAS — LEADS INDICADOS VS. CONTAS ABERTAS',
+      'EVOLUÇÃO ÚLTIMOS 7 DIAS ÚTEIS — LEADS INDICADOS VS. CONTAS ABERTAS',
       padX + 16,
       chartBoxY + 23
     );
@@ -1945,7 +1962,7 @@ export const SiscomDashboardView: React.FC = () => {
                   DASHBOARD SISCOM
                 </h2>
                 <p className="text-xs text-slate-400 font-medium">
-                  Comparativo vs. média histórica
+                  Dia atual vs. média histórica
                 </p>
               </div>
 
@@ -2319,7 +2336,7 @@ export const SiscomDashboardView: React.FC = () => {
             <div className="p-5 rounded-2xl bg-[#101010] border border-[#222222] space-y-3">
               <div>
                 <h3 className="text-xs font-extrabold text-slate-300 tracking-wider uppercase">
-                  Evolução Últimos 7 Dias — Leads Indicados vs. Contas Abertas
+                  Evolução Últimos 7 Dias Úteis — Leads Indicados vs. Contas Abertas
                 </h3>
               </div>
 

@@ -139,20 +139,29 @@ export interface SiscomComputedAverages {
   avgAtritados: number;
 }
 
+export const isWeekend = (dateStr: string): boolean => {
+  if (!dateStr) return false;
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, (m || 1) - 1, d || 1);
+  const day = dt.getDay();
+  return day === 0 || day === 6;
+};
+
 /**
- * Computes system-wide historical averages across all valid stored days.
+ * Computes system-wide historical averages across all valid stored weekdays (excluding weekends).
  */
 export const computeSystemAverages = (
   recordsMap: Record<string, SiscomDailyRecord>
 ): SiscomComputedAverages => {
   const list = Object.values(recordsMap).filter(
     r =>
-      r.totalTransferencias > 0 ||
-      r.leadsIndicados > 0 ||
-      r.contasAbertas > 0 ||
-      r.produtividadeMailing > 0 ||
-      (r.improdutivos || 0) > 0 ||
-      r.atritados > 0
+      !isWeekend(r.date) &&
+      (r.totalTransferencias > 0 ||
+        r.leadsIndicados > 0 ||
+        r.contasAbertas > 0 ||
+        r.produtividadeMailing > 0 ||
+        (r.improdutivos || 0) > 0 ||
+        r.atritados > 0)
   );
 
   const count = list.length;
@@ -217,7 +226,8 @@ export interface SiscomChartPoint {
 }
 
 /**
- * Generates the 7-day comparative series ending at referenceDateStr (YYYY-MM-DD).
+ * Generates the 7-day comparative series ending at referenceDateStr (YYYY-MM-DD),
+ * strictly ignoring weekends (Saturday & Sunday) and collecting the last 7 business days.
  */
 export const getLast7DaysChartSeries = (
   recordsMap: Record<string, SiscomDailyRecord>,
@@ -226,26 +236,37 @@ export const getLast7DaysChartSeries = (
   const [y, m, d] = referenceDateStr.split('-').map(Number);
   const refDate = new Date(y, (m || 1) - 1, d || 1);
 
-  const series: SiscomChartPoint[] = [];
-  for (let i = 6; i >= 0; i--) {
-    const dt = new Date(refDate);
-    dt.setDate(refDate.getDate() - i);
-    const yyyy = dt.getFullYear();
-    const mm = String(dt.getMonth() + 1).padStart(2, '0');
-    const dd = String(dt.getDate()).padStart(2, '0');
-    const dateKey = `${yyyy}-${mm}-${dd}`;
-    const rec = recordsMap[dateKey];
-
-    series.push({
-      date: dateKey,
-      shortLabel: `${dd}/${mm}`,
-      leadsIndicados: rec ? rec.leadsIndicados : 0,
-      contasAbertas: rec ? rec.contasAbertas : 0,
-      conversaoPct: rec ? calcConversaoPct(rec.contasAbertas, rec.leadsIndicados) : 0,
-      totalTransferencias: rec ? rec.totalTransferencias : 0,
-      hasData: !!rec
-    });
+  // If the reference date is on a weekend, roll back to the nearest previous weekday (Friday)
+  while (refDate.getDay() === 0 || refDate.getDay() === 6) {
+    refDate.setDate(refDate.getDate() - 1);
   }
 
-  return series;
+  const series: SiscomChartPoint[] = [];
+  const curDate = new Date(refDate);
+
+  // Collect the 7 most recent working days (skip Saturday & Sunday)
+  while (series.length < 7) {
+    const dayOfWeek = curDate.getDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      const yyyy = curDate.getFullYear();
+      const mm = String(curDate.getMonth() + 1).padStart(2, '0');
+      const dd = String(curDate.getDate()).padStart(2, '0');
+      const dateKey = `${yyyy}-${mm}-${dd}`;
+      const rec = recordsMap[dateKey];
+
+      series.push({
+        date: dateKey,
+        shortLabel: `${dd}/${mm}`,
+        leadsIndicados: rec ? rec.leadsIndicados : 0,
+        contasAbertas: rec ? rec.contasAbertas : 0,
+        conversaoPct: rec ? calcConversaoPct(rec.contasAbertas, rec.leadsIndicados) : 0,
+        totalTransferencias: rec ? rec.totalTransferencias : 0,
+        hasData: !!rec
+      });
+    }
+    curDate.setDate(curDate.getDate() - 1);
+  }
+
+  // Reverse so the series is in chronological order (oldest to newest)
+  return series.reverse();
 };

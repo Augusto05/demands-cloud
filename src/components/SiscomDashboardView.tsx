@@ -860,7 +860,7 @@ export const SiscomDashboardView: React.FC = () => {
         ctx.fillStyle = '#E5E5E5';
         ctx.font = '700 10px Inter, system-ui, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(String(p.val), p.x, p.y - 8);
+        ctx.fillText(String(p.val), p.x, p.y + 16);
       }
     });
 
@@ -901,24 +901,22 @@ export const SiscomDashboardView: React.FC = () => {
     return canvas;
   };
 
-  // Render Portrait Mobile PNG Canvas (Larger fonts, multi-row vertical stacking)
+  // Render Balanced 2-Row Mobile PNG Canvas (Width 640px, Row 1: Transferências + Mailing side-by-side, Row 2: Produção full width)
   const generateMobileCanvas = (): HTMLCanvasElement => {
     const scale = 2;
-    const width = 540;
+    const width = 640;
     const isDonut = mailingViewMode === 'grafico';
-    const card1H = 132;
-    const card2H = 132;
-    const card3H = isDonut ? 186 : 132;
-    const card4H = 310;
+    const card1H = 146;
+    const card2H = 146;
+    const chartBoxH = 280;
     const padX = 22;
     const innerW = width - padX * 2;
     const gap = 12;
 
-    const card1Top = 76;
-    const card2Top = card1Top + card1H + gap;
-    const card3Top = card2Top + card2H + gap;
-    const card4Top = card3Top + card3H + 14;
-    const height = card4Top + card4H + 24;
+    const topY = 72;
+    const card2Top = topY + card1H + gap;
+    const chartBoxY = card2Top + card2H + gap;
+    const height = chartBoxY + chartBoxH + 22;
 
     const canvas = document.createElement('canvas');
     canvas.width = width * scale;
@@ -946,12 +944,12 @@ export const SiscomDashboardView: React.FC = () => {
 
     // Header
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = '900 20px Inter, system-ui, sans-serif';
+    ctx.font = '900 18px Inter, system-ui, sans-serif';
     ctx.fillText('DASHBOARD SISCOM', padX, 38);
 
     ctx.fillStyle = '#737373';
-    ctx.font = '500 12px Inter, system-ui, sans-serif';
-    ctx.fillText('Comparativo vs. média histórica', padX, 56);
+    ctx.font = '500 11px Inter, system-ui, sans-serif';
+    ctx.fillText('Comparativo vs. média histórica', padX, 55);
 
     // Date Badge on Right
     const periodLabel = activeRange.isSingleDay
@@ -959,14 +957,14 @@ export const SiscomDashboardView: React.FC = () => {
       : `${formatBRDate(activeRange.start)} a ${formatBRDate(activeRange.end)}`;
     ctx.font = '700 12px Inter, system-ui, sans-serif';
     const badgeW = ctx.measureText(periodLabel).width + 24;
-    roundRect(width - padX - badgeW, 26, badgeW, 30, 8);
+    roundRect(width - padX - badgeW, 26, badgeW, 28, 8);
     ctx.fillStyle = '#141414';
     ctx.fill();
     ctx.strokeStyle = '#222222';
     ctx.stroke();
 
     ctx.fillStyle = '#E5E5E5';
-    ctx.fillText(periodLabel, width - padX - badgeW + 12, 46);
+    ctx.fillText(periodLabel, width - padX - badgeW + 12, 44);
 
     // Delta Pill Helper
     const drawDeltaPill = (x: number, y: number, delta: number | null, invertColor = false) => {
@@ -982,10 +980,10 @@ export const SiscomDashboardView: React.FC = () => {
           : `${Math.abs(val).toFixed(1).replace('.', ',')}%`;
       const txt = `${arrow} ${formattedNum}`;
 
-      ctx.font = '700 11px Inter, system-ui, sans-serif';
-      const tw = ctx.measureText(txt).width + 14;
-      const th = 20;
-      roundRect(x, y - 14, tw, th, 6);
+      ctx.font = '700 10px Inter, system-ui, sans-serif';
+      const tw = ctx.measureText(txt).width + 12;
+      const th = 18;
+      roundRect(x, y - 13, tw, th, 5);
 
       ctx.fillStyle = isZero
         ? '#1F1F1F'
@@ -1003,152 +1001,129 @@ export const SiscomDashboardView: React.FC = () => {
       ctx.stroke();
 
       ctx.fillStyle = isZero ? '#737373' : isGood ? '#34D399' : '#FB7185';
-      ctx.fillText(txt, x + 7, y);
+      ctx.fillText(txt, x + 6, y - 1);
     };
 
-    const drawMobileMetric = (
+    const drawMetricBox = (
       x: number,
       cardTop: number,
+      boxH: number,
       label: string,
       valueStr: string,
       delta: number | null,
       invert = false
     ) => {
+      const innerCardTop = cardTop + 36;
+      const innerCardH = boxH - 48;
+
       ctx.fillStyle = '#94A3B8';
-      ctx.font = '600 12px Inter, system-ui, sans-serif';
-      ctx.fillText(label, x, cardTop + 52);
+      ctx.font = '600 11px Inter, system-ui, sans-serif';
+      ctx.fillText(label, x + 2, innerCardTop + 16);
 
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = '900 32px Inter, system-ui, sans-serif';
-      ctx.fillText(valueStr, x, cardTop + 88);
+      ctx.font = '900 28px Inter, system-ui, sans-serif';
+      const centerValY = innerCardTop + Math.floor(innerCardH / 2) + 8;
+      ctx.fillText(valueStr, x + 2, centerValY);
 
-      drawDeltaPill(x, cardTop + 116, delta, invert);
+      drawDeltaPill(x + 2, innerCardTop + innerCardH - 6, delta, invert);
     };
 
-    // --- CARD 1: TRANSFERÊNCIAS ---
-    roundRect(padX, card1Top, innerW, card1H, 14);
+    // --- ROW 1: TRANSFERÊNCIAS (50%) + MAILING (50%) ---
+    const row1W = Math.floor((innerW - gap) / 2);
+    const col1X = padX;
+    const col2X = padX + row1W + gap;
+
+    // Card 1: TRANSFERÊNCIAS
+    roundRect(col1X, topY, row1W, card1H, 12);
     ctx.fillStyle = '#101010';
     ctx.fill();
     ctx.strokeStyle = '#222222';
     ctx.stroke();
 
     ctx.fillStyle = '#E2E8F0';
-    ctx.font = '800 14px Inter, system-ui, sans-serif';
-    ctx.fillText('TRANSFERÊNCIAS', padX + 18, card1Top + 26);
+    ctx.font = '800 13px Inter, system-ui, sans-serif';
+    ctx.fillText('TRANSFERÊNCIAS', col1X + 14, topY + 24);
 
-    const slot1W = Math.floor((innerW - 36 - 12) / 2);
-    drawMobileMetric(
-      padX + 18,
-      card1Top,
+    const slot1Gap = 8;
+    const slot1W = Math.floor((row1W - 28 - slot1Gap) / 2);
+    drawMetricBox(
+      col1X + 14,
+      topY,
+      card1H,
       activeRange.isSingleDay ? 'Total do Dia' : 'Total Período',
       displayedMetrics.totalTransferencias.toLocaleString('pt-BR'),
       deltas.transferencias
     );
-    drawMobileMetric(
-      padX + 18 + slot1W + 12,
-      card1Top,
+    drawMetricBox(
+      col1X + 14 + slot1W + slot1Gap,
+      topY,
+      card1H,
       'Média / Hora',
       displayedMetrics.mediaHora.toFixed(1).replace('.', ','),
       deltas.mediaHora
     );
 
-    // --- CARD 2: PRODUÇÃO ---
-    roundRect(padX, card2Top, innerW, card2H, 14);
+    // Card 2: MAILING
+    roundRect(col2X, topY, row1W, card1H, 12);
     ctx.fillStyle = '#101010';
     ctx.fill();
     ctx.strokeStyle = '#222222';
     ctx.stroke();
 
     ctx.fillStyle = '#E2E8F0';
-    ctx.font = '800 14px Inter, system-ui, sans-serif';
-    ctx.fillText('PRODUÇÃO', padX + 18, card2Top + 26);
-
-    const slot2W = Math.floor((innerW - 36 - 16) / 3);
-    drawMobileMetric(
-      padX + 18,
-      card2Top,
-      'Leads Indicados',
-      displayedMetrics.leadsIndicados.toLocaleString('pt-BR'),
-      deltas.leadsIndicados
-    );
-    drawMobileMetric(
-      padX + 18 + slot2W + 8,
-      card2Top,
-      'Contas Abertas',
-      displayedMetrics.contasAbertas.toLocaleString('pt-BR'),
-      deltas.contasAbertas
-    );
-    drawMobileMetric(
-      padX + 18 + (slot2W + 8) * 2,
-      card2Top,
-      '% Conversão',
-      `${displayedMetrics.conversaoPct.toFixed(1).replace('.', ',')}%`,
-      deltas.conversaoPct
-    );
-
-    // --- CARD 3: MAILING ---
-    roundRect(padX, card3Top, innerW, card3H, 14);
-    ctx.fillStyle = '#101010';
-    ctx.fill();
-    ctx.strokeStyle = '#222222';
-    ctx.stroke();
-
-    ctx.fillStyle = '#E2E8F0';
-    ctx.font = '800 14px Inter, system-ui, sans-serif';
-    ctx.fillText('MAILING', padX + 18, card3Top + 26);
+    ctx.font = '800 13px Inter, system-ui, sans-serif';
+    ctx.fillText('MAILING', col2X + 14, topY + 24);
 
     if (!isDonut) {
-      const slot3W = Math.floor((innerW - 36 - 12) / 2);
-      drawMobileMetric(
-        padX + 18,
-        card3Top,
+      const slot2W = Math.floor((row1W - 28 - slot1Gap) / 2);
+      drawMetricBox(
+        col2X + 14,
+        topY,
+        card1H,
         '% Produtividade',
         `${displayedMetrics.produtividadeMailing.toFixed(1).replace('.', ',')}%`,
         deltas.produtividadeMailing
       );
-      drawMobileMetric(
-        padX + 18 + slot3W + 12,
-        card3Top,
+      drawMetricBox(
+        col2X + 14 + slot2W + slot1Gap,
+        topY,
+        card1H,
         '% Atritados',
         `${displayedMetrics.atritados.toFixed(1).replace('.', ',')}%`,
         deltas.atritados,
         invertAtritadosColor
       );
     } else {
-      drawDeltaPill(padX + innerW - 74, card3Top + 24, deltas.produtividadeMailing);
-
-      const prodVal = `${displayedMetrics.produtividadeMailing.toFixed(1).replace('.', ',')}%`;
-      const improdVal = `${displayedMetrics.improdutivos.toFixed(1).replace('.', ',')}%`;
-      const atritVal = `${displayedMetrics.atritados.toFixed(1).replace('.', ',')}%`;
+      drawDeltaPill(col2X + row1W - 64, topY + 22, deltas.produtividadeMailing);
 
       const legItems = [
-        { label: `Produtivo (${prodVal})`, color: MAILING_COLORS.produtivo },
-        { label: `Improdutivo (${improdVal})`, color: MAILING_COLORS.improdutivo },
-        { label: `Atritado (${atritVal})`, color: MAILING_COLORS.atritado }
+        { label: 'Produtivo', color: MAILING_COLORS.produtivo },
+        { label: 'Improdutivo', color: MAILING_COLORS.improdutivo },
+        { label: 'Atritado', color: MAILING_COLORS.atritado }
       ];
-      const dotR = 5;
-      const dotTextGap = 9;
-      const rowStep = 28;
-      const startLegY = card3Top + 72;
-      const legX = padX + 20;
+      const dotR = 4;
+      const dotTextGap = 7;
+      const rowStep = 22;
+      const startLegY = topY + 68;
+      const legX = col2X + 14;
 
-      ctx.font = '600 13px Inter, system-ui, sans-serif';
+      ctx.font = '500 11px Inter, system-ui, sans-serif';
       legItems.forEach((item, idx) => {
         const ly = startLegY + idx * rowStep;
         ctx.beginPath();
-        ctx.arc(legX + dotR, ly - 4, dotR, 0, Math.PI * 2);
+        ctx.arc(legX + dotR, ly - 3.5, dotR, 0, Math.PI * 2);
         ctx.fillStyle = item.color;
         ctx.fill();
 
-        ctx.fillStyle = '#E2E8F0';
+        ctx.fillStyle = '#CBD5E1';
         ctx.textAlign = 'left';
         ctx.fillText(item.label, legX + dotR * 2 + dotTextGap, ly);
       });
 
-      const outerR = 52;
-      const innerR = 34;
-      const centerX = padX + innerW - outerR - 28;
-      const centerY = card3Top + 104;
+      const outerR = 42;
+      const innerR = 26;
+      const centerX = col2X + row1W - outerR - 18;
+      const centerY = topY + 88;
 
       const totalPie = mailingPieData.reduce((s, d) => s + d.value, 0);
       let currentAngle = -Math.PI / 2;
@@ -1167,32 +1142,71 @@ export const SiscomDashboardView: React.FC = () => {
         currentAngle += sliceAngle;
       });
 
+      const prodTxt = `${displayedMetrics.produtividadeMailing.toFixed(1).replace('.', ',')}%`;
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = '800 16px Inter, system-ui, sans-serif';
+      ctx.font = '800 12.5px Inter, system-ui, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(prodVal, centerX, centerY + 5.5);
+      ctx.fillText(prodTxt, centerX, centerY + 4.5);
       ctx.textAlign = 'left';
     }
 
-    // --- CARD 4: EVOLUÇÃO ÚLTIMOS 7 DIAS ---
-    roundRect(padX, card4Top, innerW, card4H, 14);
+    // --- ROW 2: PRODUÇÃO (100% WIDTH, 3 BALANCED COLUMNS) ---
+    roundRect(padX, card2Top, innerW, card2H, 12);
+    ctx.fillStyle = '#101010';
+    ctx.fill();
+    ctx.strokeStyle = '#222222';
+    ctx.stroke();
+
+    ctx.fillStyle = '#E2E8F0';
+    ctx.font = '800 13px Inter, system-ui, sans-serif';
+    ctx.fillText('PRODUÇÃO', padX + 14, card2Top + 24);
+
+    const slot3Gap = 8;
+    const slot3W = Math.floor((innerW - 28 - slot3Gap * 2) / 3);
+    drawMetricBox(
+      padX + 14,
+      card2Top,
+      card2H,
+      'Leads Indicados',
+      displayedMetrics.leadsIndicados.toLocaleString('pt-BR'),
+      deltas.leadsIndicados
+    );
+    drawMetricBox(
+      padX + 14 + slot3W + slot3Gap,
+      card2Top,
+      card2H,
+      'Contas Abertas',
+      displayedMetrics.contasAbertas.toLocaleString('pt-BR'),
+      deltas.contasAbertas
+    );
+    drawMetricBox(
+      padX + 14 + (slot3W + slot3Gap) * 2,
+      card2Top,
+      card2H,
+      '% Conversão',
+      `${displayedMetrics.conversaoPct.toFixed(1).replace('.', ',')}%`,
+      deltas.conversaoPct
+    );
+
+    // --- ROW 3: CHART BOX (LAST 7 DAYS) ---
+    roundRect(padX, chartBoxY, innerW, chartBoxH, 12);
     ctx.fillStyle = '#141414';
     ctx.fill();
     ctx.strokeStyle = '#222222';
     ctx.stroke();
 
     ctx.fillStyle = '#D4D4D4';
-    ctx.font = '700 12px Inter, system-ui, sans-serif';
+    ctx.font = '700 11px Inter, system-ui, sans-serif';
     ctx.fillText(
-      'EVOLUÇÃO ÚLTIMOS 7 DIAS — LEADS VS. CONTAS',
-      padX + 18,
-      card4Top + 28
+      'EVOLUÇÃO ÚLTIMOS 7 DIAS — LEADS INDICADOS VS. CONTAS ABERTAS',
+      padX + 16,
+      chartBoxY + 26
     );
 
-    const plotLeft = padX + 38;
-    const plotRight = padX + innerW - 38;
-    const plotTop = card4Top + 54;
-    const plotBottom = card4Top + card4H - 52;
+    const plotLeft = padX + 40;
+    const plotRight = width - padX - 40;
+    const plotTop = chartBoxY + 50;
+    const plotBottom = chartBoxY + chartBoxH - 48;
     const plotW = plotRight - plotLeft;
     const plotH = plotBottom - plotTop;
 
@@ -1213,15 +1227,15 @@ export const SiscomDashboardView: React.FC = () => {
 
       const leftVal = Math.round(((useDualAxis ? leadsAxisMax : singleAxisMax) * i) / 4);
       ctx.fillStyle = '#737373';
-      ctx.font = '500 11px Inter, system-ui, sans-serif';
+      ctx.font = '500 10px Inter, system-ui, sans-serif';
       ctx.textAlign = 'right';
-      ctx.fillText(String(leftVal), plotLeft - 10, y + 4);
+      ctx.fillText(String(leftVal), plotLeft - 10, y + 3);
 
       if (useDualAxis) {
         const rightVal = Math.round((contasAxisMax * i) / 4);
         ctx.textAlign = 'left';
         ctx.fillStyle = '#737373';
-        ctx.fillText(String(rightVal), plotRight + 10, y + 4);
+        ctx.fillText(String(rightVal), plotRight + 10, y + 3);
       }
     }
     ctx.textAlign = 'left';
@@ -1253,13 +1267,13 @@ export const SiscomDashboardView: React.FC = () => {
 
     leadsPts.forEach(p => {
       ctx.fillStyle = '#737373';
-      ctx.font = '600 12px Inter, system-ui, sans-serif';
+      ctx.font = '600 11px Inter, system-ui, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(p.label, p.x, plotBottom + 20);
+      ctx.fillText(p.label, p.x, plotBottom + 18);
     });
 
     ctx.strokeStyle = '#FACC15';
-    ctx.lineWidth = 2.4;
+    ctx.lineWidth = 2.2;
     ctx.beginPath();
     leadsPts.forEach((p, i) => {
       if (i === 0) ctx.moveTo(p.x, p.y);
@@ -1268,7 +1282,7 @@ export const SiscomDashboardView: React.FC = () => {
     ctx.stroke();
 
     ctx.strokeStyle = '#E5E5E5';
-    ctx.lineWidth = 2.4;
+    ctx.lineWidth = 2.2;
     ctx.beginPath();
     contasPts.forEach((p, i) => {
       if (i === 0) ctx.moveTo(p.x, p.y);
@@ -1278,7 +1292,7 @@ export const SiscomDashboardView: React.FC = () => {
 
     leadsPts.forEach(p => {
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
       ctx.fillStyle = '#FACC15';
       ctx.fill();
       ctx.lineWidth = 1.5;
@@ -1287,7 +1301,7 @@ export const SiscomDashboardView: React.FC = () => {
 
       if (showPointLabels) {
         ctx.fillStyle = '#FACC15';
-        ctx.font = '700 11px Inter, system-ui, sans-serif';
+        ctx.font = '700 10px Inter, system-ui, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(String(p.val), p.x, p.y - 8);
       }
@@ -1295,7 +1309,7 @@ export const SiscomDashboardView: React.FC = () => {
 
     contasPts.forEach(p => {
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
       ctx.fillStyle = '#E5E5E5';
       ctx.fill();
       ctx.lineWidth = 1.5;
@@ -1304,26 +1318,26 @@ export const SiscomDashboardView: React.FC = () => {
 
       if (showPointLabels) {
         ctx.fillStyle = '#E5E5E5';
-        ctx.font = '700 11px Inter, system-ui, sans-serif';
+        ctx.font = '700 10px Inter, system-ui, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(String(p.val), p.x, p.y - 8);
+        ctx.fillText(String(p.val), p.x, p.y + 16);
       }
     });
 
     const chartLegItems = [
       {
-        label: useDualAxis ? 'Leads (Esq.)' : 'Leads Indicados',
+        label: useDualAxis ? 'Leads (Eixo Esq.)' : 'Leads Indicados',
         color: '#FACC15'
       },
       {
-        label: useDualAxis ? 'Contas (Dir.)' : 'Contas Abertas',
+        label: useDualAxis ? 'Contas (Eixo Dir.)' : 'Contas Abertas',
         color: '#E5E5E5'
       }
     ];
-    const legY = card4Top + card4H - 16;
-    ctx.font = '600 12px Inter, system-ui, sans-serif';
-    const cDotR = 4.5;
-    const cDotTextGap = 7;
+    const legY = chartBoxY + chartBoxH - 14;
+    ctx.font = '600 11px Inter, system-ui, sans-serif';
+    const cDotR = 4;
+    const cDotTextGap = 6;
     const cItemGap = 24;
     const cItemWidths = chartLegItems.map(
       it => cDotR * 2 + cDotTextGap + ctx.measureText(it.label).width
@@ -1334,7 +1348,7 @@ export const SiscomDashboardView: React.FC = () => {
 
     chartLegItems.forEach((item, idx) => {
       ctx.beginPath();
-      ctx.arc(curChartLegX + cDotR, legY - 4, cDotR, 0, Math.PI * 2);
+      ctx.arc(curChartLegX + cDotR, legY - 3.5, cDotR, 0, Math.PI * 2);
       ctx.fillStyle = item.color;
       ctx.fill();
 
@@ -1893,7 +1907,12 @@ export const SiscomDashboardView: React.FC = () => {
 
         {/* RIGHT COLUMN: Clean Borderless Dashboard Container (Only the cards themselves have borders) */}
         <div className={`${isPrintMode ? 'col-span-1' : 'xl:col-span-8'}`}>
-          <div ref={captureCardRef} className="space-y-4">
+          <div
+            ref={captureCardRef}
+            className={`space-y-4 ${
+              dashboardLayout === 'mobile' ? 'max-w-2xl mx-auto' : ''
+            }`}
+          >
             {/* Header Row */}
             <div className="flex items-center justify-between gap-3 px-1">
               <div>
@@ -2096,182 +2115,187 @@ export const SiscomDashboardView: React.FC = () => {
                 </div>
               </div>
             ) : (
-              /* MOBILE LAYOUT: Multi-row vertical stack with large numbers & fonts */
+              /* MOBILE LAYOUT: Balanced 2-Row KPIs (Row 1: Transferências + Mailing 50/50; Row 2: Produção 100%) */
               <div className="space-y-3">
-                {/* 1. TRANSFERÊNCIAS (Full Width, 2 Columns) */}
-                <div className="p-4 sm:p-5 rounded-2xl bg-[#101010] border border-[#222222] flex flex-col gap-3">
-                  <span className="text-sm font-black uppercase tracking-wider text-slate-200 block">
-                    Transferências
-                  </span>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="min-w-0 py-1 flex flex-col justify-between items-start">
-                      <span className="text-xs text-slate-400 font-semibold block truncate">
-                        {activeRange.isSingleDay ? 'Total do Dia' : 'Total Período'}
+                {/* ROW 1: TRANSFERÊNCIAS (50%) + MAILING (50%) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-stretch">
+                  {/* 1. TRANSFERÊNCIAS */}
+                  <div className="p-4 rounded-2xl bg-[#101010] border border-[#222222] flex flex-col justify-between gap-3">
+                    <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-200 block">
+                      Transferências
+                    </span>
+
+                    <div className="grid grid-cols-2 gap-3 flex-1">
+                      <div className="min-w-0 py-1 flex flex-col justify-between items-start">
+                        <span className="text-[11px] text-slate-400 font-semibold block truncate">
+                          {activeRange.isSingleDay ? 'Total do Dia' : 'Total Período'}
+                        </span>
+                        <span className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none my-1.5">
+                          {displayedMetrics.totalTransferencias.toLocaleString('pt-BR')}
+                        </span>
+                        <MinimalDeltaBadge delta={deltas.transferencias} />
+                      </div>
+
+                      <div className="min-w-0 py-1 flex flex-col justify-between items-start">
+                        <span className="text-[11px] text-slate-400 font-semibold block truncate">
+                          Média / Hora
+                        </span>
+                        <span className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none my-1.5">
+                          {displayedMetrics.mediaHora.toFixed(1).replace('.', ',')}
+                        </span>
+                        <MinimalDeltaBadge delta={deltas.mediaHora} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2. MAILING */}
+                  <div className="p-4 rounded-2xl bg-[#101010] border border-[#222222] flex flex-col justify-between gap-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-200 block">
+                        Mailing
                       </span>
-                      <span className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-none my-2">
-                        {displayedMetrics.totalTransferencias.toLocaleString('pt-BR')}
-                      </span>
-                      <MinimalDeltaBadge delta={deltas.transferencias} />
+                      {mailingViewMode === 'grafico' && (
+                        <MinimalDeltaBadge delta={deltas.produtividadeMailing} />
+                      )}
                     </div>
 
-                    <div className="min-w-0 py-1 flex flex-col justify-between items-start">
-                      <span className="text-xs text-slate-400 font-semibold block truncate">
-                        Média / Hora
-                      </span>
-                      <span className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-none my-2">
-                        {displayedMetrics.mediaHora.toFixed(1).replace('.', ',')}
-                      </span>
-                      <MinimalDeltaBadge delta={deltas.mediaHora} />
-                    </div>
+                    {mailingViewMode === 'padrao' ? (
+                      <div className="grid grid-cols-2 gap-3 flex-1">
+                        <div className="min-w-0 py-1 flex flex-col justify-between items-start">
+                          <span className="text-[11px] text-slate-400 font-semibold block truncate">
+                            % Produtividade
+                          </span>
+                          <span className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none my-1.5">
+                            {displayedMetrics.produtividadeMailing.toFixed(1).replace('.', ',')}%
+                          </span>
+                          <MinimalDeltaBadge delta={deltas.produtividadeMailing} />
+                        </div>
+
+                        <div className="min-w-0 py-1 flex flex-col justify-between items-start">
+                          <span className="text-[11px] text-slate-400 font-semibold block truncate">
+                            % Atritados
+                          </span>
+                          <span className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none my-1.5">
+                            {displayedMetrics.atritados.toFixed(1).replace('.', ',')}%
+                          </span>
+                          <MinimalDeltaBadge
+                            delta={deltas.atritados}
+                            invertColor={invertAtritadosColor}
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between gap-2 flex-1">
+                        {/* Left Side: Legend */}
+                        <div className="flex flex-col justify-center gap-2 text-[11px] text-slate-300 font-medium whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1.5">
+                            <span
+                              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: MAILING_COLORS.produtivo }}
+                            />
+                            Produtivo
+                          </span>
+                          <span className="inline-flex items-center gap-1.5">
+                            <span
+                              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: MAILING_COLORS.improdutivo }}
+                            />
+                            Improdutivo
+                          </span>
+                          <span className="inline-flex items-center gap-1.5">
+                            <span
+                              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: MAILING_COLORS.atritado }}
+                            />
+                            Atritado
+                          </span>
+                        </div>
+
+                        {/* Right Side: Donut */}
+                        <div className="relative w-24 h-24 flex items-center justify-center flex-shrink-0">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={mailingPieData}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={28}
+                                outerRadius={44}
+                                startAngle={90}
+                                endAngle={-270}
+                                paddingAngle={2}
+                                dataKey="value"
+                                stroke="#101010"
+                                strokeWidth={2}
+                                isAnimationActive={false}
+                              >
+                                {mailingPieData.map((entry, idx) => (
+                                  <Cell key={`cell-mob-${idx}`} fill={entry.color} />
+                                ))}
+                              </Pie>
+                              <Tooltip
+                                contentStyle={{
+                                  backgroundColor: '#101010',
+                                  borderColor: '#222222',
+                                  borderRadius: '8px',
+                                  color: '#FFFFFF',
+                                  fontSize: '11px'
+                                }}
+                                formatter={(_val: any, _name: any, props: any) => [
+                                  `${Number(props.payload.raw).toFixed(1).replace('.', ',')}%`,
+                                  props.payload.name
+                                ]}
+                              />
+                            </PieChart>
+                          </ResponsiveContainer>
+                          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span className="text-xs font-black text-white leading-none">
+                              {displayedMetrics.produtividadeMailing.toFixed(1).replace('.', ',')}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* 2. PRODUÇÃO (Full Width, 3 Columns) */}
-                <div className="p-4 sm:p-5 rounded-2xl bg-[#101010] border border-[#222222] flex flex-col gap-3">
-                  <span className="text-sm font-black uppercase tracking-wider text-slate-200 block">
+                {/* ROW 2: PRODUÇÃO (100% WIDTH, 3 BALANCED COLUMNS) */}
+                <div className="p-4 rounded-2xl bg-[#101010] border border-[#222222] flex flex-col gap-3">
+                  <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-200 block">
                     Produção
                   </span>
+
                   <div className="grid grid-cols-3 gap-3">
                     <div className="min-w-0 py-1 flex flex-col justify-between items-start">
-                      <span className="text-xs text-slate-400 font-semibold block truncate">
+                      <span className="text-[11px] text-slate-400 font-semibold block truncate">
                         Leads Indicados
                       </span>
-                      <span className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-none my-2">
+                      <span className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none my-1.5">
                         {displayedMetrics.leadsIndicados.toLocaleString('pt-BR')}
                       </span>
                       <MinimalDeltaBadge delta={deltas.leadsIndicados} />
                     </div>
 
                     <div className="min-w-0 py-1 flex flex-col justify-between items-start">
-                      <span className="text-xs text-slate-400 font-semibold block truncate">
+                      <span className="text-[11px] text-slate-400 font-semibold block truncate">
                         Contas Abertas
                       </span>
-                      <span className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-none my-2">
+                      <span className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none my-1.5">
                         {displayedMetrics.contasAbertas.toLocaleString('pt-BR')}
                       </span>
                       <MinimalDeltaBadge delta={deltas.contasAbertas} />
                     </div>
 
                     <div className="min-w-0 py-1 flex flex-col justify-between items-start">
-                      <span className="text-xs text-slate-400 font-semibold block truncate">
+                      <span className="text-[11px] text-slate-400 font-semibold block truncate">
                         % Conversão
                       </span>
-                      <span className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-none my-2">
+                      <span className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none my-1.5">
                         {displayedMetrics.conversaoPct.toFixed(1).replace('.', ',')}%
                       </span>
                       <MinimalDeltaBadge delta={deltas.conversaoPct} />
                     </div>
                   </div>
-                </div>
-
-                {/* 3. MAILING (Full Width) */}
-                <div className="p-4 sm:p-5 rounded-2xl bg-[#101010] border border-[#222222] flex flex-col gap-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-black uppercase tracking-wider text-slate-200 block">
-                      Mailing
-                    </span>
-                    {mailingViewMode === 'grafico' && (
-                      <MinimalDeltaBadge delta={deltas.produtividadeMailing} />
-                    )}
-                  </div>
-
-                  {mailingViewMode === 'padrao' ? (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="min-w-0 py-1 flex flex-col justify-between items-start">
-                        <span className="text-xs text-slate-400 font-semibold block truncate">
-                          % Produtividade
-                        </span>
-                        <span className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-none my-2">
-                          {displayedMetrics.produtividadeMailing.toFixed(1).replace('.', ',')}%
-                        </span>
-                        <MinimalDeltaBadge delta={deltas.produtividadeMailing} />
-                      </div>
-
-                      <div className="min-w-0 py-1 flex flex-col justify-between items-start">
-                        <span className="text-xs text-slate-400 font-semibold block truncate">
-                          % Atritados
-                        </span>
-                        <span className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-none my-2">
-                          {displayedMetrics.atritados.toFixed(1).replace('.', ',')}%
-                        </span>
-                        <MinimalDeltaBadge
-                          delta={deltas.atritados}
-                          invertColor={invertAtritadosColor}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between gap-4 py-1">
-                      {/* Left Side: Vertical Legend with percentages */}
-                      <div className="flex flex-col justify-center gap-3 text-xs sm:text-sm text-slate-300 font-medium whitespace-nowrap">
-                        <span className="inline-flex items-center gap-2.5">
-                          <span
-                            className="w-3 h-3 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: MAILING_COLORS.produtivo }}
-                          />
-                          Produtivo ({displayedMetrics.produtividadeMailing.toFixed(1).replace('.', ',')}%)
-                        </span>
-                        <span className="inline-flex items-center gap-2.5">
-                          <span
-                            className="w-3 h-3 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: MAILING_COLORS.improdutivo }}
-                          />
-                          Improdutivo ({displayedMetrics.improdutivos.toFixed(1).replace('.', ',')}%)
-                        </span>
-                        <span className="inline-flex items-center gap-2.5">
-                          <span
-                            className="w-3 h-3 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: MAILING_COLORS.atritado }}
-                          />
-                          Atritado ({displayedMetrics.atritados.toFixed(1).replace('.', ',')}%)
-                        </span>
-                      </div>
-
-                      {/* Right Side: Larger Donut Chart */}
-                      <div className="relative w-32 h-32 flex items-center justify-center flex-shrink-0">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={mailingPieData}
-                              cx="50%"
-                              cy="50%"
-                              innerRadius={36}
-                              outerRadius={56}
-                              startAngle={90}
-                              endAngle={-270}
-                              paddingAngle={2}
-                              dataKey="value"
-                              stroke="#101010"
-                              strokeWidth={2}
-                              isAnimationActive={false}
-                            >
-                              {mailingPieData.map((entry, idx) => (
-                                <Cell key={`cell-mob-${idx}`} fill={entry.color} />
-                              ))}
-                            </Pie>
-                            <Tooltip
-                              contentStyle={{
-                                backgroundColor: '#101010',
-                                borderColor: '#222222',
-                                borderRadius: '8px',
-                                color: '#FFFFFF',
-                                fontSize: '11px'
-                              }}
-                              formatter={(_val: any, _name: any, props: any) => [
-                                `${Number(props.payload.raw).toFixed(1).replace('.', ',')}%`,
-                                props.payload.name
-                              ]}
-                            />
-                          </PieChart>
-                        </ResponsiveContainer>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                          <span className="text-sm font-black text-white leading-none">
-                            {displayedMetrics.produtividadeMailing.toFixed(1).replace('.', ',')}%
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             )}
@@ -2372,7 +2396,7 @@ export const SiscomDashboardView: React.FC = () => {
                       {showPointLabels && (
                         <LabelList
                           dataKey="contasAbertas"
-                          position="top"
+                          position="bottom"
                           offset={8}
                           style={{ fill: '#E5E5E5', fontSize: 10, fontWeight: 700 }}
                         />

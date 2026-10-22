@@ -717,13 +717,6 @@ export const SiscomDashboardView: React.FC = () => {
         ctx.stroke();
         currentAngle += sliceAngle;
       });
-
-      const prodTxt = `${displayedMetrics.produtividadeMailing.toFixed(1).replace('.', ',')}%`;
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = '800 13px Inter, system-ui, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(prodTxt, centerX, centerY + 4.5);
-      ctx.textAlign = 'left';
     }
 
     // --- CHART BOX (LAST 7 DAYS) ---
@@ -1150,13 +1143,6 @@ export const SiscomDashboardView: React.FC = () => {
         ctx.stroke();
         currentAngle += sliceAngle;
       });
-
-      // Center Percentage
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = '900 14px Inter, system-ui, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(prodVal, centerX, centerY + 5);
-      ctx.textAlign = 'left';
     }
 
     // --- ROW 2: CARD 3 (PRODUÇÃO, 100% WIDTH) ---
@@ -2143,11 +2129,6 @@ export const SiscomDashboardView: React.FC = () => {
                             />
                           </PieChart>
                         </ResponsiveContainer>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                          <span className="text-[13px] font-black text-white leading-none">
-                            {displayedMetrics.produtividadeMailing.toFixed(1).replace('.', ',')}%
-                          </span>
-                        </div>
                       </div>
                     </div>
                   )}
@@ -2287,11 +2268,6 @@ export const SiscomDashboardView: React.FC = () => {
                               />
                             </PieChart>
                           </ResponsiveContainer>
-                          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                            <span className="text-xs font-black text-white leading-none">
-                              {displayedMetrics.produtividadeMailing.toFixed(1).replace('.', ',')}%
-                            </span>
-                          </div>
                         </div>
                       </div>
                     )}

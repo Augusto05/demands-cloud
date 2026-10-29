@@ -1031,16 +1031,16 @@ export const SiscomDashboardView: React.FC = () => {
       ctx.strokeStyle = '#1E1E1E';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(padX + 20, hourlyBoxY + 38);
-      ctx.lineTo(padX + totalInnerW - 20, hourlyBoxY + 38);
+      ctx.moveTo(padX + 22, hourlyBoxY + 38);
+      ctx.lineTo(padX + totalInnerW - 22, hourlyBoxY + 38);
       ctx.stroke();
 
       const col1X = padX + 22;
-      const col2Center = padX + 270;
-      const col3Center = padX + 475;
-      const col4Center = padX + 680;
-      const col5Center = padX + 865;
-      const rightEdge = padX + totalInnerW - 20;
+      const col2Center = padX + 236;
+      const col3Center = padX + 426;
+      const col4Center = padX + 616;
+      const col5Center = padX + 794;
+      const rightEdge = padX + totalInnerW - 22;
 
       const headerTop = hourlyBoxY + 38;
       const headerH = 28;
@@ -1666,17 +1666,17 @@ export const SiscomDashboardView: React.FC = () => {
       ctx.strokeStyle = '#1E1E1E';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(padX + 16, hourlyBoxY + 36);
-      ctx.lineTo(padX + innerW - 16, hourlyBoxY + 36);
+      ctx.moveTo(padX + 18, hourlyBoxY + 36);
+      ctx.lineTo(padX + innerW - 18, hourlyBoxY + 36);
       ctx.stroke();
 
       // 5 Columns: Horário, Leads, Contas, % Conv, Destaque
-      const col1X = padX + 16;
-      const col2Center = padX + 130;
-      const col3Center = padX + 222;
-      const col4Center = padX + 316;
-      const col5Center = padX + 412;
-      const rightEdge = padX + innerW - 16;
+      const col1X = padX + 18;
+      const col2Center = padX + 146;
+      const col3Center = padX + 256;
+      const col4Center = padX + 366;
+      const col5Center = padX + 476;
+      const rightEdge = padX + innerW - 18;
 
       const headerTop = hourlyBoxY + 36;
       const headerH = 28;
@@ -3165,14 +3165,14 @@ export const SiscomDashboardView: React.FC = () => {
                 {/* Minimalist Hourly Table */}
                 {hourlyStats.hasData ? (
                   <div className="overflow-x-auto rounded-xl border border-[#222222]">
-                    <table className="w-full text-left text-xs border-collapse">
+                    <table className="w-full text-left text-xs border-collapse table-fixed">
                       <thead>
                         <tr className="border-b border-[#282828] bg-[#141414] text-slate-400 text-[11px] font-bold uppercase tracking-wider">
-                          <th className="py-3 px-3.5">Horário</th>
-                          <th className="py-3 px-3.5 text-center">Leads Indicados</th>
-                          <th className="py-3 px-3.5 text-center">Contas Abertas</th>
-                          <th className="py-3 px-3.5 text-center">% Conversão</th>
-                          <th className="py-3 px-3.5 text-center">Destaque</th>
+                          <th className="py-3 px-3.5 w-[22%]">Horário</th>
+                          <th className="py-3 px-3.5 text-center w-[19%]">Leads Indicados</th>
+                          <th className="py-3 px-3.5 text-center w-[19%]">Contas Abertas</th>
+                          <th className="py-3 px-3.5 text-center w-[20%]">% Conversão</th>
+                          <th className="py-3 px-3.5 text-center w-[20%]">Destaque</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#242424]">

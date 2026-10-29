@@ -1939,18 +1939,42 @@ export const SiscomDashboardView: React.FC = () => {
 
               {/* SECTION 2.1: HORA A HORA (DINÂMICO) */}
               <div className="p-3.5 rounded-xl bg-[#161616] border border-[#222222] space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <Clock className="w-3.5 h-3.5 text-[#FACC15]" />
                     <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-300">
                       Operação Hora a Hora
                     </span>
                   </div>
-                  {hourlyItems.length > 0 && (
-                    <span className="text-[10px] text-slate-400 font-semibold">
-                      {hourlyItems.length} {hourlyItems.length === 1 ? 'faixa' : 'faixas'}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {hourlyItems.length > 0 && (
+                      <span className="text-[10px] text-slate-500 font-medium hidden sm:inline">
+                        {hourlyItems.length} {hourlyItems.length === 1 ? 'faixa' : 'faixas'}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={toggleHourlySection}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                        showHourlySection
+                          ? 'bg-[#181818] border-[#2E2E2E] text-slate-300 hover:text-white hover:border-slate-500'
+                          : 'bg-amber-400/10 border-amber-400/30 text-amber-300 hover:bg-amber-400/20'
+                      }`}
+                      title={showHourlySection ? 'Ocultar visão na Dashboard' : 'Exibir visão na Dashboard'}
+                    >
+                      {showHourlySection ? (
+                        <>
+                          <EyeOff className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Ocultar visão</span>
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="w-3.5 h-3.5 text-[#26D09B]" />
+                          <span>Exibir visão</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 {hourlyItems.length > 0 ? (
@@ -2657,56 +2681,36 @@ export const SiscomDashboardView: React.FC = () => {
             )}
 
             {/* HOURLY BREAKDOWN VIEW (OPERAÇÃO HORA A HORA) */}
-            {showHourlySection ? (
+            {showHourlySection && (
               <div className="p-5 rounded-2xl bg-[#101010] border border-[#222222] space-y-4">
-                {/* Header with Title, Best Highlights & Hide Toggle */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#1E1E1E]">
+                {/* Header with Title & Best Highlights */}
+                <div className="flex items-center justify-between gap-3 pb-3 border-b border-[#1E1E1E]">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-xl bg-[#181818] border border-[#262626] flex items-center justify-center text-[#FACC15]">
                       <Clock className="w-4 h-4" />
                     </div>
-                    <div>
-                      <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
-                        Operação Hora a Hora
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#1C1C1C] text-[#26D09B] border border-[#2A2A2A]">
-                          {activeRange.isSingleDay ? 'Visão do Dia' : 'Consolidado Período'}
-                        </span>
-                      </h3>
-                      <p className="text-[11px] text-slate-400 font-medium">
-                        Detalhamento de volume e conversão por faixa horária
-                      </p>
+                    <h3 className="text-xs font-black text-white uppercase tracking-wider">
+                      Operação Hora a Hora
+                    </h3>
+                  </div>
+
+                  {hourlyStats.bestConvHour && (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#26D09B]/10 border border-[#26D09B]/30 text-[#26D09B] text-[11px] font-bold">
+                      <span>🎯 Melhor Conversão:</span>
+                      <span className="text-white">{hourlyStats.bestConvHour.hourLabel}</span>
+                      <span className="text-[#26D09B]">
+                        (
+                        {(
+                          (hourlyStats.bestConvHour.contasAbertas /
+                            hourlyStats.bestConvHour.leadsIndicados) *
+                          100
+                        )
+                          .toFixed(1)
+                          .replace('.', ',')}
+                        %)
+                      </span>
                     </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {hourlyStats.bestConvHour && (
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#26D09B]/10 border border-[#26D09B]/30 text-[#26D09B] text-[11px] font-bold">
-                        <span>🎯 Melhor Conversão:</span>
-                        <span className="text-white">{hourlyStats.bestConvHour.hourLabel}</span>
-                        <span className="text-[#26D09B]">
-                          (
-                          {(
-                            (hourlyStats.bestConvHour.contasAbertas /
-                              hourlyStats.bestConvHour.leadsIndicados) *
-                            100
-                          )
-                            .toFixed(1)
-                            .replace('.', ',')}
-                          %)
-                        </span>
-                      </div>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={toggleHourlySection}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#161616] hover:bg-[#202020] border border-[#262626] text-slate-400 hover:text-slate-200 transition-colors cursor-pointer text-[11px] font-medium"
-                      title="Ocultar detalhamento hora a hora"
-                    >
-                      <EyeOff className="w-3.5 h-3.5" />
-                      Ocultar
-                    </button>
-                  </div>
+                  )}
                 </div>
 
                 {/* Minimalist Hourly Table */}
@@ -2838,31 +2842,6 @@ export const SiscomDashboardView: React.FC = () => {
                     </p>
                   </div>
                 )}
-              </div>
-            ) : (
-              /* Collapsed banner when hidden */
-              <div className="p-3.5 rounded-2xl bg-[#101010] border border-[#222222] flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-[#181818] border border-[#262626] flex items-center justify-center text-slate-500">
-                    <Clock className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-slate-300">
-                      Operação Hora a Hora
-                    </span>
-                    <span className="text-[11px] text-slate-500 ml-2">
-                      (Visão oculta)
-                    </span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={toggleHourlySection}
-                  className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#161616] hover:bg-[#202020] border border-[#2A2A2A] text-slate-300 hover:text-white transition-colors cursor-pointer text-xs font-semibold"
-                >
-                  <Eye className="w-3.5 h-3.5 text-[#26D09B]" />
-                  Exibir Visão
-                </button>
               </div>
             )}
 

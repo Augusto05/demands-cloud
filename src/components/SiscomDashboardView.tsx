@@ -2685,18 +2685,15 @@ export const SiscomDashboardView: React.FC = () => {
               <div className="p-5 rounded-2xl bg-[#101010] border border-[#222222] space-y-4">
                 {/* Header with Title & Best Highlights */}
                 <div className="flex items-center justify-between gap-3 pb-3 border-b border-[#1E1E1E]">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-[#181818] border border-[#262626] flex items-center justify-center text-[#FACC15]">
-                      <Clock className="w-4 h-4" />
-                    </div>
-                    <h3 className="text-xs font-black text-white uppercase tracking-wider">
+                  <div>
+                    <h3 className="text-xs font-extrabold text-slate-300 tracking-wider uppercase">
                       Operação Hora a Hora
                     </h3>
                   </div>
 
                   {hourlyStats.bestConvHour && (
                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#26D09B]/10 border border-[#26D09B]/30 text-[#26D09B] text-[11px] font-bold">
-                      <span>🎯 Melhor Conversão:</span>
+                      <span className="text-slate-400 font-semibold">Melhor Conversão:</span>
                       <span className="text-white">{hourlyStats.bestConvHour.hourLabel}</span>
                       <span className="text-[#26D09B]">
                         (
@@ -2795,12 +2792,12 @@ export const SiscomDashboardView: React.FC = () => {
                               </td>
                               <td className="py-2.5 px-3 text-center">
                                 {isBestConv ? (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#26D09B]/20 text-[#26D09B] text-[10px] font-black uppercase">
-                                    🎯 Maior Conv.
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-[#26D09B]/20 text-[#26D09B] text-[10px] font-black uppercase">
+                                    Maior Conv.
                                   </span>
                                 ) : isPeakLeads ? (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FACC15]/20 text-[#FACC15] text-[10px] font-black uppercase">
-                                    ⚡ Pico Leads
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-[#FACC15]/20 text-[#FACC15] text-[10px] font-black uppercase">
+                                    Pico Leads
                                   </span>
                                 ) : (
                                   <span className="text-slate-600 font-mono text-[11px]">—</span>
@@ -2832,8 +2829,7 @@ export const SiscomDashboardView: React.FC = () => {
                     </table>
                   </div>
                 ) : (
-                  <div className="py-8 px-4 rounded-xl bg-[#0D0D0D] border border-dashed border-[#222222] text-center space-y-2">
-                    <Clock className="w-8 h-8 mx-auto text-slate-600" />
+                  <div className="py-6 px-4 rounded-xl bg-[#0D0D0D] border border-dashed border-[#222222] text-center space-y-1.5">
                     <p className="text-xs font-semibold text-slate-300">
                       Nenhum detalhamento hora a hora registrado para este dia
                     </p>

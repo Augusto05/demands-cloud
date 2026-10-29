@@ -1031,68 +1031,78 @@ export const SiscomDashboardView: React.FC = () => {
       ctx.strokeStyle = '#1E1E1E';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(padX + 18, hourlyBoxY + 38);
-      ctx.lineTo(padX + totalInnerW - 18, hourlyBoxY + 38);
+      ctx.moveTo(padX + 20, hourlyBoxY + 38);
+      ctx.lineTo(padX + totalInnerW - 20, hourlyBoxY + 38);
       ctx.stroke();
 
-      const col1X = padX + 18;
-      const col2X = padX + 270;
-      const col3X = padX + 440;
-      const col4X = padX + 620;
-      const col5X = padX + totalInnerW - 18;
-      let curY = hourlyBoxY + 54;
+      const col1X = padX + 22;
+      const col2Center = padX + 270;
+      const col3Center = padX + 475;
+      const col4Center = padX + 680;
+      const col5Center = padX + 865;
+      const rightEdge = padX + totalInnerW - 20;
 
+      const headerTop = hourlyBoxY + 38;
+      const headerH = 28;
+      const headerMid = headerTop + headerH / 2;
+
+      ctx.textBaseline = 'middle';
       ctx.font = '700 11px Inter, system-ui, sans-serif';
       ctx.fillStyle = '#737373';
       ctx.textAlign = 'left';
-      ctx.fillText('HORÁRIO', col1X, curY);
-      ctx.textAlign = 'right';
-      ctx.fillText('LEADS INDICADOS', col2X, curY);
-      ctx.fillText('CONTAS ABERTAS', col3X, curY);
-      ctx.fillText('% CONVERSÃO', col4X, curY);
-      ctx.fillText('DESTAQUE', col5X, curY);
+      ctx.fillText('HORÁRIO', col1X, headerMid);
+      ctx.textAlign = 'center';
+      ctx.fillText('LEADS INDICADOS', col2Center, headerMid);
+      ctx.fillText('CONTAS ABERTAS', col3Center, headerMid);
+      ctx.fillText('% CONVERSÃO', col4Center, headerMid);
+      ctx.fillText('DESTAQUE', col5Center, headerMid);
+
+      let curRowTop = headerTop + headerH;
+      ctx.strokeStyle = '#282828';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(col1X, curRowTop);
+      ctx.lineTo(rightEdge, curRowTop);
+      ctx.stroke();
 
       displayedHourlyData.forEach(item => {
-        curY += hourlyRowH;
-
-        ctx.strokeStyle = '#242424';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(col1X, curY - 16);
-        ctx.lineTo(col5X, curY - 16);
-        ctx.stroke();
+        const rowMid = curRowTop + hourlyRowH / 2;
 
         // Hour Label (8h, 9h, etc.)
         ctx.font = '700 13px Inter, system-ui, sans-serif';
         ctx.fillStyle = '#E5E5E5';
         ctx.textAlign = 'left';
-        ctx.fillText(formatHourDisplay(item.hourLabel), col1X, curY);
+        ctx.fillText(formatHourDisplay(item.hourLabel), col1X, rowMid);
 
         // Leads Indicados
         ctx.fillStyle = '#FFFFFF';
-        ctx.textAlign = 'right';
-        ctx.fillText(item.leadsIndicados.toLocaleString('pt-BR'), col2X, curY);
+        ctx.textAlign = 'center';
+        ctx.fillText(item.leadsIndicados.toLocaleString('pt-BR'), col2Center, rowMid);
 
         // Contas Abertas
         ctx.font = '800 13px Inter, system-ui, sans-serif';
         ctx.fillStyle = item.contasAbertas > 0 ? '#26D09B' : '#737373';
-        ctx.textAlign = 'right';
-        ctx.fillText(item.contasAbertas.toLocaleString('pt-BR'), col3X, curY);
+        ctx.textAlign = 'center';
+        ctx.fillText(item.contasAbertas.toLocaleString('pt-BR'), col3Center, rowMid);
 
         // % Conversão Pill
         const conv =
           item.leadsIndicados > 0 ? (item.contasAbertas / item.leadsIndicados) * 100 : 0;
         const convText = `${conv.toFixed(1).replace('.', ',')}%`;
+        ctx.font = '800 12px Inter, system-ui, sans-serif';
         const tw = ctx.measureText(convText).width;
+        const pillW = tw + 14;
+        const pillH = 20;
         if (conv >= (hourlyStats.avgConversao || 10) && conv > 0) {
-          roundRect(col4X - tw - 12, curY - 15, tw + 12, 20, 5);
+          roundRect(col4Center - pillW / 2, rowMid - pillH / 2, pillW, pillH, 5);
           ctx.fillStyle = 'rgba(38, 208, 155, 0.15)';
           ctx.fill();
           ctx.fillStyle = '#26D09B';
         } else {
           ctx.fillStyle = conv > 0 ? '#E2E8F0' : '#737373';
         }
-        ctx.fillText(convText, col4X - 6, curY);
+        ctx.textAlign = 'center';
+        ctx.fillText(convText, col4Center, rowMid);
 
         // Destaque Badge
         const isBestConv =
@@ -1103,55 +1113,73 @@ export const SiscomDashboardView: React.FC = () => {
           const bText = 'Maior Conv.';
           ctx.font = '800 10px Inter, system-ui, sans-serif';
           const bw = ctx.measureText(bText).width + 12;
-          roundRect(col5X - bw, curY - 14, bw, 18, 4);
+          const badgeH = 18;
+          roundRect(col5Center - bw / 2, rowMid - badgeH / 2, bw, badgeH, 4);
           ctx.fillStyle = 'rgba(38, 208, 155, 0.20)';
           ctx.fill();
           ctx.fillStyle = '#26D09B';
-          ctx.fillText(bText, col5X - 6, curY - 1);
+          ctx.textAlign = 'center';
+          ctx.fillText(bText, col5Center, rowMid);
         } else if (isPeakLeads) {
           const bText = 'Pico Leads';
           ctx.font = '800 10px Inter, system-ui, sans-serif';
           const bw = ctx.measureText(bText).width + 12;
-          roundRect(col5X - bw, curY - 14, bw, 18, 4);
+          const badgeH = 18;
+          roundRect(col5Center - bw / 2, rowMid - badgeH / 2, bw, badgeH, 4);
           ctx.fillStyle = 'rgba(250, 204, 21, 0.20)';
           ctx.fill();
           ctx.fillStyle = '#FACC15';
-          ctx.fillText(bText, col5X - 6, curY - 1);
+          ctx.textAlign = 'center';
+          ctx.fillText(bText, col5Center, rowMid);
         } else {
           ctx.font = '600 11px Inter, system-ui, sans-serif';
           ctx.fillStyle = '#525252';
-          ctx.fillText('—', col5X - 12, curY);
+          ctx.textAlign = 'center';
+          ctx.fillText('—', col5Center, rowMid);
         }
+
+        curRowTop += hourlyRowH;
+        ctx.strokeStyle = '#242424';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(col1X, curRowTop);
+        ctx.lineTo(rightEdge, curRowTop);
+        ctx.stroke();
       });
 
       // Totals Footer Row
-      curY += 26;
-      ctx.strokeStyle = '#262626';
+      const totaisH = 32;
+      const totaisMid = curRowTop + totaisH / 2;
+
+      ctx.strokeStyle = '#2A2A2A';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.moveTo(col1X, curY - 16);
-      ctx.lineTo(col5X, curY - 16);
+      ctx.moveTo(col1X, curRowTop);
+      ctx.lineTo(rightEdge, curRowTop);
       ctx.stroke();
 
       ctx.font = '800 11px Inter, system-ui, sans-serif';
       ctx.fillStyle = '#A3A3A3';
       ctx.textAlign = 'left';
-      ctx.fillText('TOTAIS', col1X, curY);
+      ctx.fillText('TOTAIS', col1X, totaisMid);
 
       ctx.font = '800 13px Inter, system-ui, sans-serif';
       ctx.fillStyle = '#FFFFFF';
-      ctx.textAlign = 'right';
-      ctx.fillText(hourlyStats.totalLeads.toLocaleString('pt-BR'), col2X, curY);
+      ctx.textAlign = 'center';
+      ctx.fillText(hourlyStats.totalLeads.toLocaleString('pt-BR'), col2Center, totaisMid);
 
       ctx.fillStyle = '#26D09B';
-      ctx.fillText(hourlyStats.totalContas.toLocaleString('pt-BR'), col3X, curY);
+      ctx.fillText(hourlyStats.totalContas.toLocaleString('pt-BR'), col3Center, totaisMid);
 
       ctx.fillStyle = '#FFFFFF';
-      ctx.fillText(`${hourlyStats.avgConversao.toFixed(1).replace('.', ',')}%`, col4X - 6, curY);
+      ctx.fillText(`${hourlyStats.avgConversao.toFixed(1).replace('.', ',')}%`, col4Center, totaisMid);
 
       ctx.font = '600 11px Inter, system-ui, sans-serif';
       ctx.fillStyle = '#737373';
-      ctx.fillText(`${displayedHourlyData.length} faixas`, col5X, curY);
+      ctx.fillText(`${displayedHourlyData.length} faixas`, col5Center, totaisMid);
+
+      ctx.textBaseline = 'alphabetic';
+      ctx.textAlign = 'left';
     }
 
     // --- CHART BOX (LAST 7 DAYS) ---
@@ -1644,63 +1672,73 @@ export const SiscomDashboardView: React.FC = () => {
 
       // 5 Columns: Horário, Leads, Contas, % Conv, Destaque
       const col1X = padX + 16;
-      const col2X = padX + 155;
-      const col3X = padX + 250;
-      const col4X = padX + 375;
-      const col5X = padX + innerW - 16;
-      let curY = hourlyBoxY + 52;
+      const col2Center = padX + 130;
+      const col3Center = padX + 222;
+      const col4Center = padX + 316;
+      const col5Center = padX + 412;
+      const rightEdge = padX + innerW - 16;
 
+      const headerTop = hourlyBoxY + 36;
+      const headerH = 28;
+      const headerMid = headerTop + headerH / 2;
+
+      ctx.textBaseline = 'middle';
       ctx.font = '700 10px Inter, system-ui, sans-serif';
       ctx.fillStyle = '#737373';
       ctx.textAlign = 'left';
-      ctx.fillText('HORÁRIO', col1X, curY);
-      ctx.textAlign = 'right';
-      ctx.fillText('LEADS', col2X, curY);
-      ctx.fillText('CONTAS', col3X, curY);
-      ctx.fillText('% CONV.', col4X, curY);
-      ctx.fillText('DESTAQUE', col5X, curY);
+      ctx.fillText('HORÁRIO', col1X, headerMid);
+      ctx.textAlign = 'center';
+      ctx.fillText('LEADS', col2Center, headerMid);
+      ctx.fillText('CONTAS', col3Center, headerMid);
+      ctx.fillText('% CONV.', col4Center, headerMid);
+      ctx.fillText('DESTAQUE', col5Center, headerMid);
+
+      let curRowTop = headerTop + headerH;
+      ctx.strokeStyle = '#282828';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(col1X, curRowTop);
+      ctx.lineTo(rightEdge, curRowTop);
+      ctx.stroke();
 
       displayedHourlyData.forEach(item => {
-        curY += hourlyRowH;
-
-        ctx.strokeStyle = '#242424';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(col1X, curY - 16);
-        ctx.lineTo(col5X, curY - 16);
-        ctx.stroke();
+        const rowMid = curRowTop + hourlyRowH / 2;
 
         // Hour Label (8h, 9h, etc.)
         ctx.font = '700 13px Inter, system-ui, sans-serif';
         ctx.fillStyle = '#E5E5E5';
         ctx.textAlign = 'left';
-        ctx.fillText(formatHourDisplay(item.hourLabel), col1X, curY);
+        ctx.fillText(formatHourDisplay(item.hourLabel), col1X, rowMid);
 
         // Leads
         ctx.fillStyle = '#FFFFFF';
-        ctx.textAlign = 'right';
-        ctx.fillText(item.leadsIndicados.toLocaleString('pt-BR'), col2X, curY);
+        ctx.textAlign = 'center';
+        ctx.fillText(item.leadsIndicados.toLocaleString('pt-BR'), col2Center, rowMid);
 
         // Contas
         ctx.font = '800 13px Inter, system-ui, sans-serif';
         ctx.fillStyle = item.contasAbertas > 0 ? '#26D09B' : '#737373';
-        ctx.textAlign = 'right';
-        ctx.fillText(item.contasAbertas.toLocaleString('pt-BR'), col3X, curY);
+        ctx.textAlign = 'center';
+        ctx.fillText(item.contasAbertas.toLocaleString('pt-BR'), col3Center, rowMid);
 
         // % Conversão Pill
         const conv =
           item.leadsIndicados > 0 ? (item.contasAbertas / item.leadsIndicados) * 100 : 0;
         const convText = `${conv.toFixed(1).replace('.', ',')}%`;
+        ctx.font = '800 12px Inter, system-ui, sans-serif';
         const tw = ctx.measureText(convText).width;
+        const pillW = tw + 12;
+        const pillH = 20;
         if (conv >= (hourlyStats.avgConversao || 10) && conv > 0) {
-          roundRect(col4X - tw - 10, curY - 15, tw + 10, 20, 5);
+          roundRect(col4Center - pillW / 2, rowMid - pillH / 2, pillW, pillH, 5);
           ctx.fillStyle = 'rgba(38, 208, 155, 0.15)';
           ctx.fill();
           ctx.fillStyle = '#26D09B';
         } else {
           ctx.fillStyle = conv > 0 ? '#E2E8F0' : '#737373';
         }
-        ctx.fillText(convText, col4X - 5, curY);
+        ctx.textAlign = 'center';
+        ctx.fillText(convText, col4Center, rowMid);
 
         // Destaque Badge
         const isBestConv =
@@ -1711,55 +1749,73 @@ export const SiscomDashboardView: React.FC = () => {
           const bText = 'Maior Conv.';
           ctx.font = '800 10px Inter, system-ui, sans-serif';
           const bw = ctx.measureText(bText).width + 10;
-          roundRect(col5X - bw, curY - 14, bw, 18, 4);
+          const badgeH = 18;
+          roundRect(col5Center - bw / 2, rowMid - badgeH / 2, bw, badgeH, 4);
           ctx.fillStyle = 'rgba(38, 208, 155, 0.20)';
           ctx.fill();
           ctx.fillStyle = '#26D09B';
-          ctx.fillText(bText, col5X - 5, curY - 1);
+          ctx.textAlign = 'center';
+          ctx.fillText(bText, col5Center, rowMid);
         } else if (isPeakLeads) {
           const bText = 'Pico Leads';
           ctx.font = '800 10px Inter, system-ui, sans-serif';
           const bw = ctx.measureText(bText).width + 10;
-          roundRect(col5X - bw, curY - 14, bw, 18, 4);
+          const badgeH = 18;
+          roundRect(col5Center - bw / 2, rowMid - badgeH / 2, bw, badgeH, 4);
           ctx.fillStyle = 'rgba(250, 204, 21, 0.20)';
           ctx.fill();
           ctx.fillStyle = '#FACC15';
-          ctx.fillText(bText, col5X - 5, curY - 1);
+          ctx.textAlign = 'center';
+          ctx.fillText(bText, col5Center, rowMid);
         } else {
           ctx.font = '600 11px Inter, system-ui, sans-serif';
           ctx.fillStyle = '#525252';
-          ctx.fillText('—', col5X - 8, curY);
+          ctx.textAlign = 'center';
+          ctx.fillText('—', col5Center, rowMid);
         }
+
+        curRowTop += hourlyRowH;
+        ctx.strokeStyle = '#242424';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(col1X, curRowTop);
+        ctx.lineTo(rightEdge, curRowTop);
+        ctx.stroke();
       });
 
       // Totals
-      curY += 26;
-      ctx.strokeStyle = '#262626';
+      const totaisH = 32;
+      const totaisMid = curRowTop + totaisH / 2;
+
+      ctx.strokeStyle = '#2A2A2A';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.moveTo(col1X, curY - 16);
-      ctx.lineTo(col5X, curY - 16);
+      ctx.moveTo(col1X, curRowTop);
+      ctx.lineTo(rightEdge, curRowTop);
       ctx.stroke();
 
       ctx.font = '800 11px Inter, system-ui, sans-serif';
       ctx.fillStyle = '#A3A3A3';
       ctx.textAlign = 'left';
-      ctx.fillText('TOTAIS', col1X, curY);
+      ctx.fillText('TOTAIS', col1X, totaisMid);
 
       ctx.font = '800 13px Inter, system-ui, sans-serif';
       ctx.fillStyle = '#FFFFFF';
-      ctx.textAlign = 'right';
-      ctx.fillText(hourlyStats.totalLeads.toLocaleString('pt-BR'), col2X, curY);
+      ctx.textAlign = 'center';
+      ctx.fillText(hourlyStats.totalLeads.toLocaleString('pt-BR'), col2Center, totaisMid);
 
       ctx.fillStyle = '#26D09B';
-      ctx.fillText(hourlyStats.totalContas.toLocaleString('pt-BR'), col3X, curY);
+      ctx.fillText(hourlyStats.totalContas.toLocaleString('pt-BR'), col3Center, totaisMid);
 
       ctx.fillStyle = '#FFFFFF';
-      ctx.fillText(`${hourlyStats.avgConversao.toFixed(1).replace('.', ',')}%`, col4X - 5, curY);
+      ctx.fillText(`${hourlyStats.avgConversao.toFixed(1).replace('.', ',')}%`, col4Center, totaisMid);
 
       ctx.font = '600 11px Inter, system-ui, sans-serif';
       ctx.fillStyle = '#737373';
-      ctx.fillText(`${displayedHourlyData.length} faixas`, col5X, curY);
+      ctx.fillText(`${displayedHourlyData.length} faixas`, col5Center, totaisMid);
+
+      ctx.textBaseline = 'alphabetic';
+      ctx.textAlign = 'left';
     }
 
     // --- ROW 3: CARD 4 (CHART BOX, LAST 7 DAYS) ---
@@ -3113,9 +3169,9 @@ export const SiscomDashboardView: React.FC = () => {
                       <thead>
                         <tr className="border-b border-[#282828] bg-[#141414] text-slate-400 text-[11px] font-bold uppercase tracking-wider">
                           <th className="py-3 px-3.5">Horário</th>
-                          <th className="py-3 px-3.5 text-right">Leads Indicados</th>
-                          <th className="py-3 px-3.5 text-right">Contas Abertas</th>
-                          <th className="py-3 px-3.5 text-right">% Conversão</th>
+                          <th className="py-3 px-3.5 text-center">Leads Indicados</th>
+                          <th className="py-3 px-3.5 text-center">Contas Abertas</th>
+                          <th className="py-3 px-3.5 text-center">% Conversão</th>
                           <th className="py-3 px-3.5 text-center">Destaque</th>
                         </tr>
                       </thead>
@@ -3143,16 +3199,16 @@ export const SiscomDashboardView: React.FC = () => {
                                   : ''
                               }`}
                             >
-                              <td className="py-3 px-3.5 font-semibold text-slate-200">
+                              <td className="py-3 px-3.5 font-semibold text-slate-200 align-middle">
                                 <span className="inline-flex items-center gap-2">
                                   <span className="w-1.5 h-1.5 rounded-full bg-[#525252]" />
                                   {formatHourDisplay(item.hourLabel)}
                                 </span>
                               </td>
-                              <td className="py-3 px-3.5 text-right font-bold text-white tracking-tight">
+                              <td className="py-3 px-3.5 text-center font-bold text-white tracking-tight align-middle">
                                 {item.leadsIndicados.toLocaleString('pt-BR')}
                               </td>
-                              <td className="py-3 px-3.5 text-right font-extrabold text-white tracking-tight">
+                              <td className="py-3 px-3.5 text-center font-extrabold text-white tracking-tight align-middle">
                                 <span
                                   className={
                                     item.contasAbertas > 0 ? 'text-[#26D09B]' : 'text-slate-500'
@@ -3161,9 +3217,9 @@ export const SiscomDashboardView: React.FC = () => {
                                   {item.contasAbertas.toLocaleString('pt-BR')}
                                 </span>
                               </td>
-                              <td className="py-3 px-3.5 text-right">
+                              <td className="py-3 px-3.5 text-center align-middle">
                                 <span
-                                  className={`inline-block font-black px-2 py-0.5 rounded-md ${
+                                  className={`inline-block font-black px-2.5 py-1 rounded-md ${
                                     conv >= (hourlyStats.avgConversao || 10) && conv > 0
                                       ? 'bg-[#26D09B]/15 text-[#26D09B]'
                                       : conv > 0
@@ -3174,7 +3230,7 @@ export const SiscomDashboardView: React.FC = () => {
                                   {conv.toFixed(1).replace('.', ',')}%
                                 </span>
                               </td>
-                              <td className="py-3 px-3.5 text-center">
+                              <td className="py-3 px-3.5 text-center align-middle">
                                 {isBestConv ? (
                                   <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-[#26D09B]/20 text-[#26D09B] text-[10px] font-black uppercase">
                                     Maior Conv.
@@ -3193,19 +3249,19 @@ export const SiscomDashboardView: React.FC = () => {
                       </tbody>
                       <tfoot>
                         <tr className="border-t-2 border-[#2A2A2A] bg-[#141414] font-black text-slate-200">
-                          <td className="py-3 px-3.5 uppercase text-[11px] tracking-wider text-slate-400">
+                          <td className="py-3 px-3.5 uppercase text-[11px] tracking-wider text-slate-400 align-middle">
                             Totais
                           </td>
-                          <td className="py-3 px-3.5 text-right text-white font-bold">
+                          <td className="py-3 px-3.5 text-center text-white font-bold align-middle">
                             {hourlyStats.totalLeads.toLocaleString('pt-BR')}
                           </td>
-                          <td className="py-3 px-3.5 text-right text-[#26D09B] font-black">
+                          <td className="py-3 px-3.5 text-center text-[#26D09B] font-black align-middle">
                             {hourlyStats.totalContas.toLocaleString('pt-BR')}
                           </td>
-                          <td className="py-3 px-3.5 text-right text-white font-black">
+                          <td className="py-3 px-3.5 text-center text-white font-black align-middle">
                             {hourlyStats.avgConversao.toFixed(1).replace('.', ',')}%
                           </td>
-                          <td className="py-3 px-3.5 text-center text-[10px] text-slate-400 font-medium">
+                          <td className="py-3 px-3.5 text-center text-[10px] text-slate-400 font-medium align-middle">
                             {displayedHourlyData.length} faixas
                           </td>
                         </tr>

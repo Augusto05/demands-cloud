@@ -15,7 +15,9 @@ import {
   Eye,
   EyeOff,
   Monitor,
-  Smartphone
+  Smartphone,
+  Clock,
+  Plus
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -31,7 +33,7 @@ import {
   Pie,
   Cell
 } from 'recharts';
-import { SiscomDailyRecord, SiscomStore } from '../types';
+import { SiscomDailyRecord, SiscomStore, SiscomHourlyItem } from '../types';
 import {
   getStoredSiscomStore,
   fetchSiscomStoreFromCloud,
@@ -99,6 +101,29 @@ export const SiscomDashboardView: React.FC = () => {
   const [copiedImage, setCopiedImage] = useState<boolean>(false);
   const [downloadingImage, setDownloadingImage] = useState<boolean>(false);
 
+  // Hourly Breakdown State (Dynamic based on horasRodadas)
+  const [hourlyItems, setHourlyItems] = useState<SiscomHourlyItem[]>([]);
+  const [showHourlySection, setShowHourlySection] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('demands_siscom_show_hourly');
+      return saved !== null ? saved === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
+
+  const toggleHourlySection = () => {
+    setShowHourlySection(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('demands_siscom_show_hourly', String(next));
+      } catch {
+        // ignore localStorage error
+      }
+      return next;
+    });
+  };
+
   const captureCardRef = useRef<HTMLDivElement>(null);
 
   // Sync with Supabase on mount & interval
@@ -118,6 +143,83 @@ export const SiscomDashboardView: React.FC = () => {
     };
   }, []);
 
+  // Default hour label generator (e.g. 09h - 10h, 10h - 11h)
+  const getDefaultHourLabel = (index: number, startHour = 9): string => {
+    const start = (startHour + index) % 24;
+    const end = (start + 1) % 24;
+    const sStr = String(start).padStart(2, '0');
+    const eStr = String(end).padStart(2, '0');
+    return `${sStr}h - ${eStr}h`;
+  };
+
+  // Dynamic slot management helpers
+  const handleHorasRodadasChange = (value: string) => {
+    setHorasRodadas(value);
+    const parsed = parseFloat(value.replace(',', '.')) || 0;
+    const targetCount = Math.floor(parsed);
+    if (targetCount > 0) {
+      setHourlyItems(prev => {
+        const next: SiscomHourlyItem[] = [];
+        for (let i = 0; i < targetCount; i++) {
+          if (prev[i]) {
+            next.push({ ...prev[i], hourIndex: i });
+          } else {
+            next.push({
+              hourIndex: i,
+              hourLabel: getDefaultHourLabel(i),
+              leadsIndicados: 0,
+              contasAbertas: 0
+            });
+          }
+        }
+        return next;
+      });
+    }
+  };
+
+  const handleAddHourlySlot = () => {
+    setHourlyItems(prev => [
+      ...prev,
+      {
+        hourIndex: prev.length,
+        hourLabel: getDefaultHourLabel(prev.length),
+        leadsIndicados: 0,
+        contasAbertas: 0
+      }
+    ]);
+  };
+
+  const handleRemoveHourlySlot = (index: number) => {
+    setHourlyItems(prev =>
+      prev
+        .filter((_, i) => i !== index)
+        .map((item, idx) => ({ ...item, hourIndex: idx }))
+    );
+  };
+
+  const handleUpdateHourlySlot = (
+    index: number,
+    field: 'hourLabel' | 'leadsIndicados' | 'contasAbertas',
+    val: any
+  ) => {
+    setHourlyItems(prev =>
+      prev.map((item, i) => {
+        if (i !== index) return item;
+        return {
+          ...item,
+          [field]: field === 'hourLabel' ? String(val) : Math.max(0, parseInt(val, 10) || 0)
+        };
+      })
+    );
+  };
+
+  const handleSyncTotalsFromHourly = () => {
+    const sumLeads = hourlyItems.reduce((acc, h) => acc + (h.leadsIndicados || 0), 0);
+    const sumContas = hourlyItems.reduce((acc, h) => acc + (h.contasAbertas || 0), 0);
+    setLeadsIndicados(String(sumLeads));
+    setContasAbertas(String(sumContas));
+  };
+
   // Populate form inputs whenever selectedDate changes
   useEffect(() => {
     const existing = store.records[selectedDate];
@@ -135,6 +237,24 @@ export const SiscomDashboardView: React.FC = () => {
         existing.improdutivos && existing.improdutivos > 0 ? String(existing.improdutivos) : ''
       );
       setAtritados(existing.atritados > 0 ? String(existing.atritados) : '');
+
+      if (existing.hourlyData && Array.isArray(existing.hourlyData) && existing.hourlyData.length > 0) {
+        setHourlyItems(existing.hourlyData);
+      } else if (existing.horasRodadas > 0) {
+        const count = Math.floor(existing.horasRodadas);
+        const slots: SiscomHourlyItem[] = [];
+        for (let i = 0; i < count; i++) {
+          slots.push({
+            hourIndex: i,
+            hourLabel: getDefaultHourLabel(i),
+            leadsIndicados: 0,
+            contasAbertas: 0
+          });
+        }
+        setHourlyItems(slots);
+      } else {
+        setHourlyItems([]);
+      }
     } else {
       setHorasRodadas('');
       setTotalTransferencias('');
@@ -143,6 +263,7 @@ export const SiscomDashboardView: React.FC = () => {
       setProdutividadeMailing('');
       setImprodutivos('');
       setAtritados('');
+      setHourlyItems([]);
     }
   }, [selectedDate, store.records[selectedDate]?.updatedAt]);
 
@@ -164,7 +285,8 @@ export const SiscomDashboardView: React.FC = () => {
       numContas > 0 ||
       numProdMailing > 0 ||
       numImprodutivos > 0 ||
-      numAtritados > 0;
+      numAtritados > 0 ||
+      hourlyItems.length > 0;
 
     const map = { ...store.records };
     if (hasFormInput || map[selectedDate]) {
@@ -177,6 +299,7 @@ export const SiscomDashboardView: React.FC = () => {
         produtividadeMailing: numProdMailing,
         improdutivos: numImprodutivos,
         atritados: numAtritados,
+        hourlyData: hourlyItems,
         updatedAt: map[selectedDate]?.updatedAt || new Date().toISOString()
       };
     }
@@ -190,7 +313,8 @@ export const SiscomDashboardView: React.FC = () => {
     numContas,
     numProdMailing,
     numImprodutivos,
-    numAtritados
+    numAtritados,
+    hourlyItems
   ]);
 
   // Save handler
@@ -207,6 +331,7 @@ export const SiscomDashboardView: React.FC = () => {
         produtividadeMailing: numProdMailing,
         improdutivos: numImprodutivos,
         atritados: numAtritados,
+        hourlyData: hourlyItems,
         updatedAt: new Date().toISOString()
       };
       const updated = await saveSiscomRecord(store, record);
@@ -235,6 +360,7 @@ export const SiscomDashboardView: React.FC = () => {
         setProdutividadeMailing('');
         setImprodutivos('');
         setAtritados('');
+        setHourlyItems([]);
       }
     } finally {
       setIsSyncing(false);
@@ -452,6 +578,106 @@ export const SiscomDashboardView: React.FC = () => {
   const chartAxes = useMemo(() => {
     return computeChartAxes(chart7DaysSeries, useDualAxis);
   }, [chart7DaysSeries, useDualAxis]);
+
+  // Dynamic Hourly Breakdown Data for Active Period
+  const displayedHourlyData = useMemo(() => {
+    if (activeRange.isSingleDay) {
+      const singleRec = effectiveRecordsMap[activeRange.start];
+      return singleRec?.hourlyData || [];
+    }
+
+    // Multi-day filter: aggregate by hour slot across matching records in period
+    const aggregationMap: Record<
+      string,
+      { hourLabel: string; leadsIndicados: number; contasAbertas: number; order: number }
+    > = {};
+    const matchingRecords = Object.values(effectiveRecordsMap).filter(
+      r => r.date >= activeRange.start && r.date <= activeRange.end && !isWeekend(r.date)
+    );
+
+    matchingRecords.forEach(rec => {
+      if (rec.hourlyData && Array.isArray(rec.hourlyData)) {
+        rec.hourlyData.forEach(item => {
+          const key = (item.hourLabel || '').trim();
+          if (!key) return;
+          if (!aggregationMap[key]) {
+            aggregationMap[key] = {
+              hourLabel: item.hourLabel,
+              leadsIndicados: 0,
+              contasAbertas: 0,
+              order: item.hourIndex ?? 0
+            };
+          }
+          aggregationMap[key].leadsIndicados += item.leadsIndicados || 0;
+          aggregationMap[key].contasAbertas += item.contasAbertas || 0;
+        });
+      }
+    });
+
+    return Object.values(aggregationMap)
+      .sort((a, b) => a.order - b.order)
+      .map((item, idx) => ({
+        hourIndex: idx,
+        hourLabel: item.hourLabel,
+        leadsIndicados: item.leadsIndicados,
+        contasAbertas: item.contasAbertas
+      }));
+  }, [activeRange, effectiveRecordsMap]);
+
+  // Hourly operational stats (identifies best conversion and peak hours)
+  const hourlyStats = useMemo(() => {
+    if (!displayedHourlyData || displayedHourlyData.length === 0) {
+      return {
+        hasData: false,
+        totalLeads: 0,
+        totalContas: 0,
+        avgConversao: 0,
+        bestConvHour: null as SiscomHourlyItem | null,
+        bestContasHour: null as SiscomHourlyItem | null,
+        peakLeadsHour: null as SiscomHourlyItem | null,
+        maxHourlyLeads: 1
+      };
+    }
+
+    const totalLeads = displayedHourlyData.reduce((acc, h) => acc + (h.leadsIndicados || 0), 0);
+    const totalContas = displayedHourlyData.reduce((acc, h) => acc + (h.contasAbertas || 0), 0);
+    const avgConversao = totalLeads > 0 ? (totalContas / totalLeads) * 100 : 0;
+    const maxHourlyLeads = Math.max(1, ...displayedHourlyData.map(h => h.leadsIndicados || 0));
+
+    let bestConvHour: SiscomHourlyItem | null = null;
+    let highestConv = -1;
+    let bestContasHour: SiscomHourlyItem | null = null;
+    let maxContas = -1;
+    let peakLeadsHour: SiscomHourlyItem | null = null;
+    let maxLeads = -1;
+
+    displayedHourlyData.forEach(h => {
+      const conv = h.leadsIndicados > 0 ? (h.contasAbertas / h.leadsIndicados) * 100 : 0;
+      if (h.leadsIndicados > 0 && conv > highestConv && h.contasAbertas > 0) {
+        highestConv = conv;
+        bestConvHour = h;
+      }
+      if (h.contasAbertas > maxContas && h.contasAbertas > 0) {
+        maxContas = h.contasAbertas;
+        bestContasHour = h;
+      }
+      if (h.leadsIndicados > maxLeads && h.leadsIndicados > 0) {
+        maxLeads = h.leadsIndicados;
+        peakLeadsHour = h;
+      }
+    });
+
+    return {
+      hasData: totalLeads > 0 || totalContas > 0,
+      totalLeads,
+      totalContas,
+      avgConversao,
+      bestConvHour,
+      bestContasHour,
+      peakLeadsHour,
+      maxHourlyLeads
+    };
+  }, [displayedHourlyData]);
 
   // Sorted list of stored dates for quick history access (weekdays only)
   const historyList = useMemo(() => {
@@ -1648,7 +1874,7 @@ export const SiscomDashboardView: React.FC = () => {
                       min="0"
                       placeholder="Ex: 8.5"
                       value={horasRodadas}
-                      onChange={e => setHorasRodadas(e.target.value)}
+                      onChange={e => handleHorasRodadasChange(e.target.value)}
                       className="w-full px-3 py-2 rounded-xl bg-[#0D0D0D] border border-[#222222] text-sm font-bold text-white focus:outline-none focus:border-slate-500 transition-colors"
                     />
                   </div>
@@ -1709,6 +1935,130 @@ export const SiscomDashboardView: React.FC = () => {
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* SECTION 2.1: HORA A HORA (DINÂMICO) */}
+              <div className="p-3.5 rounded-xl bg-[#161616] border border-[#222222] space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5 text-[#FACC15]" />
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-300">
+                      Operação Hora a Hora
+                    </span>
+                  </div>
+                  {hourlyItems.length > 0 && (
+                    <span className="text-[10px] text-slate-400 font-semibold">
+                      {hourlyItems.length} {hourlyItems.length === 1 ? 'faixa' : 'faixas'}
+                    </span>
+                  )}
+                </div>
+
+                {hourlyItems.length > 0 ? (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-12 gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">
+                      <div className="col-span-4">Horário</div>
+                      <div className="col-span-3 text-center">Leads</div>
+                      <div className="col-span-3 text-center">Contas</div>
+                      <div className="col-span-2 text-right">Conv.</div>
+                    </div>
+
+                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                      {hourlyItems.map((item, idx) => {
+                        const itemConv =
+                          item.leadsIndicados > 0
+                            ? (item.contasAbertas / item.leadsIndicados) * 100
+                            : 0;
+                        return (
+                          <div
+                            key={idx}
+                            className="grid grid-cols-12 gap-2 items-center bg-[#0D0D0D] p-2 rounded-xl border border-[#222222]"
+                          >
+                            <div className="col-span-4">
+                              <input
+                                type="text"
+                                value={item.hourLabel}
+                                onChange={e =>
+                                  handleUpdateHourlySlot(idx, 'hourLabel', e.target.value)
+                                }
+                                className="w-full bg-transparent text-xs font-bold text-slate-200 focus:outline-none focus:text-white"
+                                placeholder="09h - 10h"
+                              />
+                            </div>
+                            <div className="col-span-3">
+                              <input
+                                type="number"
+                                min="0"
+                                value={item.leadsIndicados || ''}
+                                onChange={e =>
+                                  handleUpdateHourlySlot(idx, 'leadsIndicados', e.target.value)
+                                }
+                                placeholder="0"
+                                className="w-full px-2 py-1 text-center bg-[#161616] border border-[#262626] rounded-lg text-xs font-bold text-white focus:outline-none focus:border-slate-500"
+                              />
+                            </div>
+                            <div className="col-span-3">
+                              <input
+                                type="number"
+                                min="0"
+                                value={item.contasAbertas || ''}
+                                onChange={e =>
+                                  handleUpdateHourlySlot(idx, 'contasAbertas', e.target.value)
+                                }
+                                placeholder="0"
+                                className="w-full px-2 py-1 text-center bg-[#161616] border border-[#262626] rounded-lg text-xs font-bold text-[#26D09B] focus:outline-none focus:border-[#26D09B]"
+                              />
+                            </div>
+                            <div className="col-span-2 text-right">
+                              <span
+                                className={`text-[10px] font-bold ${
+                                  itemConv > 0 ? 'text-[#26D09B]' : 'text-slate-600'
+                                }`}
+                              >
+                                {itemConv > 0 ? `${itemConv.toFixed(0)}%` : '0%'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Action buttons below slots */}
+                    <div className="pt-2 flex items-center justify-between gap-2 border-t border-[#222222]">
+                      <button
+                        type="button"
+                        onClick={handleAddHourlySlot}
+                        className="flex items-center gap-1 text-[11px] font-semibold text-slate-400 hover:text-white cursor-pointer transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5 text-[#FACC15]" />
+                        Adicionar hora
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleSyncTotalsFromHourly}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#26D09B]/10 hover:bg-[#26D09B]/20 text-[#26D09B] border border-[#26D09B]/30 text-[11px] font-bold transition-all cursor-pointer"
+                        title="Preencher os campos de Produção com a soma do detalhamento hora a hora"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        Copiar soma p/ totais
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-xl bg-[#0D0D0D] border border-dashed border-[#262626] text-center space-y-2">
+                    <p className="text-[11px] text-slate-400">
+                      Informe o campo <strong>Horas rodadas</strong> para gerar as faixas horárias automaticamente.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleAddHourlySlot}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#202020] hover:bg-[#2A2A2A] text-slate-200 hover:text-white text-xs font-semibold transition-colors cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5 text-[#FACC15]" />
+                      Adicionar faixa horária
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* SECTION 3: MAILING */}
@@ -2303,6 +2653,216 @@ export const SiscomDashboardView: React.FC = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* HOURLY BREAKDOWN VIEW (OPERAÇÃO HORA A HORA) */}
+            {showHourlySection ? (
+              <div className="p-5 rounded-2xl bg-[#101010] border border-[#222222] space-y-4">
+                {/* Header with Title, Best Highlights & Hide Toggle */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#1E1E1E]">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-[#181818] border border-[#262626] flex items-center justify-center text-[#FACC15]">
+                      <Clock className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                        Operação Hora a Hora
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#1C1C1C] text-[#26D09B] border border-[#2A2A2A]">
+                          {activeRange.isSingleDay ? 'Visão do Dia' : 'Consolidado Período'}
+                        </span>
+                      </h3>
+                      <p className="text-[11px] text-slate-400 font-medium">
+                        Detalhamento de volume e conversão por faixa horária
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {hourlyStats.bestConvHour && (
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#26D09B]/10 border border-[#26D09B]/30 text-[#26D09B] text-[11px] font-bold">
+                        <span>🎯 Melhor Conversão:</span>
+                        <span className="text-white">{hourlyStats.bestConvHour.hourLabel}</span>
+                        <span className="text-[#26D09B]">
+                          (
+                          {(
+                            (hourlyStats.bestConvHour.contasAbertas /
+                              hourlyStats.bestConvHour.leadsIndicados) *
+                            100
+                          )
+                            .toFixed(1)
+                            .replace('.', ',')}
+                          %)
+                        </span>
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={toggleHourlySection}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#161616] hover:bg-[#202020] border border-[#262626] text-slate-400 hover:text-slate-200 transition-colors cursor-pointer text-[11px] font-medium"
+                      title="Ocultar detalhamento hora a hora"
+                    >
+                      <EyeOff className="w-3.5 h-3.5" />
+                      Ocultar
+                    </button>
+                  </div>
+                </div>
+
+                {/* Minimalist Hourly Table */}
+                {hourlyStats.hasData ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-[#222222] text-slate-400 text-[11px] font-bold uppercase tracking-wider">
+                          <th className="py-2.5 px-3">Faixa Horária</th>
+                          <th className="py-2.5 px-3 text-right">Leads Indicados</th>
+                          <th className="py-2.5 px-3 text-right">Contas Abertas</th>
+                          <th className="py-2.5 px-3 text-right">% Conversão</th>
+                          <th className="py-2.5 px-3 text-center">Destaque</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#1A1A1A]">
+                        {displayedHourlyData.map((item, idx) => {
+                          const conv =
+                            item.leadsIndicados > 0
+                              ? (item.contasAbertas / item.leadsIndicados) * 100
+                              : 0;
+                          const isBestConv =
+                            hourlyStats.bestConvHour?.hourIndex === item.hourIndex &&
+                            item.contasAbertas > 0;
+                          const isPeakLeads =
+                            hourlyStats.peakLeadsHour?.hourIndex === item.hourIndex &&
+                            item.leadsIndicados > 0;
+                          const widthPct = Math.min(
+                            100,
+                            Math.round(
+                              (item.leadsIndicados / (hourlyStats.maxHourlyLeads || 1)) * 100
+                            )
+                          );
+
+                          return (
+                            <tr
+                              key={idx}
+                              className={`hover:bg-[#161616] transition-colors ${
+                                isBestConv ? 'bg-[#26D09B]/5' : ''
+                              }`}
+                            >
+                              <td className="py-2.5 px-3 font-semibold text-slate-200">
+                                <span className="inline-flex items-center gap-2">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#525252]" />
+                                  {item.hourLabel}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-right">
+                                <div className="inline-flex flex-col items-end">
+                                  <span className="font-bold text-white tracking-tight">
+                                    {item.leadsIndicados.toLocaleString('pt-BR')}
+                                  </span>
+                                  <div className="w-16 h-1 rounded-full bg-[#202020] mt-1 overflow-hidden">
+                                    <div
+                                      className="h-full bg-[#FACC15] rounded-full"
+                                      style={{ width: `${widthPct}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-extrabold text-white tracking-tight">
+                                <span
+                                  className={
+                                    item.contasAbertas > 0 ? 'text-[#26D09B]' : 'text-slate-500'
+                                  }
+                                >
+                                  {item.contasAbertas.toLocaleString('pt-BR')}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-right">
+                                <span
+                                  className={`inline-block font-black px-2 py-0.5 rounded-md ${
+                                    conv >= (hourlyStats.avgConversao || 10) && conv > 0
+                                      ? 'bg-[#26D09B]/15 text-[#26D09B]'
+                                      : conv > 0
+                                      ? 'text-slate-200'
+                                      : 'text-slate-500'
+                                  }`}
+                                >
+                                  {conv.toFixed(1).replace('.', ',')}%
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-center">
+                                {isBestConv ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#26D09B]/20 text-[#26D09B] text-[10px] font-black uppercase">
+                                    🎯 Maior Conv.
+                                  </span>
+                                ) : isPeakLeads ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FACC15]/20 text-[#FACC15] text-[10px] font-black uppercase">
+                                    ⚡ Pico Leads
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-600 font-mono text-[11px]">—</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="border-t-2 border-[#262626] bg-[#141414] font-black text-slate-200">
+                          <td className="py-3 px-3 uppercase text-[11px] tracking-wider text-slate-400">
+                            Totais
+                          </td>
+                          <td className="py-3 px-3 text-right text-white font-bold">
+                            {hourlyStats.totalLeads.toLocaleString('pt-BR')}
+                          </td>
+                          <td className="py-3 px-3 text-right text-[#26D09B] font-black">
+                            {hourlyStats.totalContas.toLocaleString('pt-BR')}
+                          </td>
+                          <td className="py-3 px-3 text-right text-white font-black">
+                            {hourlyStats.avgConversao.toFixed(1).replace('.', ',')}%
+                          </td>
+                          <td className="py-3 px-3 text-center text-[10px] text-slate-400 font-medium">
+                            {displayedHourlyData.length} faixas
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="py-8 px-4 rounded-xl bg-[#0D0D0D] border border-dashed border-[#222222] text-center space-y-2">
+                    <Clock className="w-8 h-8 mx-auto text-slate-600" />
+                    <p className="text-xs font-semibold text-slate-300">
+                      Nenhum detalhamento hora a hora registrado para este dia
+                    </p>
+                    <p className="text-[11px] text-slate-500 max-w-md mx-auto">
+                      Preencha as horas rodadas no formulário de lançamento diário para gerar os campos e acompanhar a conversão por faixa de horário.
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Collapsed banner when hidden */
+              <div className="p-3.5 rounded-2xl bg-[#101010] border border-[#222222] flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-[#181818] border border-[#262626] flex items-center justify-center text-slate-500">
+                    <Clock className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-slate-300">
+                      Operação Hora a Hora
+                    </span>
+                    <span className="text-[11px] text-slate-500 ml-2">
+                      (Visão oculta)
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={toggleHourlySection}
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#161616] hover:bg-[#202020] border border-[#2A2A2A] text-slate-300 hover:text-white transition-colors cursor-pointer text-xs font-semibold"
+                >
+                  <Eye className="w-3.5 h-3.5 text-[#26D09B]" />
+                  Exibir Visão
+                </button>
               </div>
             )}
 

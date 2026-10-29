@@ -73,6 +73,7 @@ export const saveSiscomRecord = async (
           produtividade_mailing: record.produtividadeMailing,
           improdutivos: record.improdutivos || 0,
           atritados: record.atritados,
+          hourly_data: record.hourlyData || [],
           updated_at: new Date().toISOString()
         },
         { onConflict: 'user_key,record_date' }

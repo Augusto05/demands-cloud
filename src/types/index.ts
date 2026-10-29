@@ -239,6 +239,13 @@ export interface FlowCanvasStore {
 }
 
 // Dashboard Siscom Types
+export interface SiscomHourlyItem {
+  hourIndex: number; // 0, 1, 2, ...
+  hourLabel: string; // e.g. "09h - 10h"
+  leadsIndicados: number;
+  contasAbertas: number;
+}
+
 export interface SiscomDailyRecord {
   date: string; // YYYY-MM-DD
   horasRodadas: number; // Usado apenas para cálculo de média/hora, não exibido no card final
@@ -248,6 +255,7 @@ export interface SiscomDailyRecord {
   produtividadeMailing: number; // % Produtividade do Mailing (Produtivo)
   improdutivos?: number; // % Improdutivos do Mailing
   atritados: number; // % Atritados
+  hourlyData?: SiscomHourlyItem[]; // Detalhamento hora a hora da operação
   updatedAt: string; // ISO string
 }
 

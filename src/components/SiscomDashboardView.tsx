@@ -220,6 +220,34 @@ export const SiscomDashboardView: React.FC = () => {
     setContasAbertas(String(sumContas));
   };
 
+  const handlePrepend8amSlot = () => {
+    setHourlyItems(prev => [
+      {
+        hourIndex: 0,
+        hourLabel: '08h - 09h',
+        leadsIndicados: 0,
+        contasAbertas: 0
+      },
+      ...prev.map((item, idx) => ({ ...item, hourIndex: idx + 1 }))
+    ]);
+  };
+
+  const handleRealignSlotsFrom8am = () => {
+    setHourlyItems(prev =>
+      prev.map((item, idx) => ({
+        ...item,
+        hourIndex: idx,
+        hourLabel: getDefaultHourLabel(idx, 8)
+      }))
+    );
+  };
+
+  const handleClearHourlyData = () => {
+    if (window.confirm('Deseja limpar todos os lançamentos hora a hora deste dia?')) {
+      setHourlyItems([]);
+    }
+  };
+
   // Populate form inputs whenever selectedDate changes
   useEffect(() => {
     const existing = store.records[selectedDate];
@@ -701,7 +729,15 @@ export const SiscomDashboardView: React.FC = () => {
     const width = 920;
     const isDonut = mailingViewMode === 'grafico';
     const topBoxH = isDonut ? 162 : 146;
-    const height = isDonut ? 596 : 580;
+    const topY = 72;
+
+    const hasHourly = showHourlySection && hourlyStats.hasData && displayedHourlyData.length > 0;
+    const hourlyRowH = 22;
+    const hourlyBoxH = hasHourly ? 44 + 20 + displayedHourlyData.length * hourlyRowH + 24 : 0;
+    const chartBoxY = hasHourly ? topY + topBoxH + 14 + hourlyBoxH + 14 : topY + topBoxH + 14;
+    const chartBoxH = 236;
+    const height = chartBoxY + chartBoxH + 24;
+
     const canvas = document.createElement('canvas');
     canvas.width = width * scale;
     canvas.height = height * scale;
@@ -792,7 +828,6 @@ export const SiscomDashboardView: React.FC = () => {
     };
 
     // 3 Section Blocks in 2 : 3 : 2 proportion
-    const topY = 72;
     const gap = 12;
     const availW = totalInnerW - gap * 2;
     const col1W = Math.floor((availW * 2) / 7);
@@ -968,9 +1003,94 @@ export const SiscomDashboardView: React.FC = () => {
       });
     }
 
+    // --- HOURLY BREAKDOWN BOX (IF ACTIVE) ---
+    if (hasHourly) {
+      const hourlyBoxY = topY + topBoxH + 14;
+      roundRect(padX, hourlyBoxY, totalInnerW, hourlyBoxH, 12);
+      ctx.fillStyle = '#141414';
+      ctx.fill();
+      ctx.strokeStyle = '#222222';
+      ctx.stroke();
+
+      ctx.fillStyle = '#D4D4D4';
+      ctx.font = '700 11px Inter, system-ui, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('OPERAÇÃO HORA A HORA', padX + 16, hourlyBoxY + 24);
+
+      ctx.strokeStyle = '#1E1E1E';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(padX + 16, hourlyBoxY + 34);
+      ctx.lineTo(padX + totalInnerW - 16, hourlyBoxY + 34);
+      ctx.stroke();
+
+      const col1X = padX + 16;
+      const col2X = padX + totalInnerW * 0.48;
+      const col3X = padX + totalInnerW * 0.74;
+      const col4X = padX + totalInnerW - 16;
+      let curY = hourlyBoxY + 49;
+
+      ctx.font = '700 10px Inter, system-ui, sans-serif';
+      ctx.fillStyle = '#737373';
+      ctx.textAlign = 'left';
+      ctx.fillText('FAIXA HORÁRIA', col1X, curY);
+      ctx.textAlign = 'right';
+      ctx.fillText('LEADS INDICADOS', col2X, curY);
+      ctx.fillText('CONTAS ABERTAS', col3X, curY);
+      ctx.fillText('% CONVERSÃO', col4X, curY);
+
+      ctx.font = '600 11px Inter, system-ui, sans-serif';
+      displayedHourlyData.forEach(item => {
+        curY += hourlyRowH;
+
+        ctx.strokeStyle = '#1A1A1A';
+        ctx.beginPath();
+        ctx.moveTo(col1X, curY - 14);
+        ctx.lineTo(col4X, curY - 14);
+        ctx.stroke();
+
+        ctx.fillStyle = '#E5E5E5';
+        ctx.textAlign = 'left';
+        ctx.fillText(item.hourLabel, col1X, curY);
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'right';
+        ctx.fillText(item.leadsIndicados.toLocaleString('pt-BR'), col2X, curY);
+
+        ctx.fillStyle = item.contasAbertas > 0 ? '#26D09B' : '#737373';
+        ctx.fillText(item.contasAbertas.toLocaleString('pt-BR'), col3X, curY);
+
+        const conv =
+          item.leadsIndicados > 0 ? (item.contasAbertas / item.leadsIndicados) * 100 : 0;
+        ctx.fillStyle = conv > 0 ? '#26D09B' : '#737373';
+        ctx.fillText(`${conv.toFixed(1).replace('.', ',')}%`, col4X, curY);
+      });
+
+      curY += 22;
+      ctx.strokeStyle = '#262626';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(col1X, curY - 14);
+      ctx.lineTo(col4X, curY - 14);
+      ctx.stroke();
+
+      ctx.font = '800 10px Inter, system-ui, sans-serif';
+      ctx.fillStyle = '#A3A3A3';
+      ctx.textAlign = 'left';
+      ctx.fillText('TOTAIS', col1X, curY);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.textAlign = 'right';
+      ctx.fillText(hourlyStats.totalLeads.toLocaleString('pt-BR'), col2X, curY);
+
+      ctx.fillStyle = '#26D09B';
+      ctx.fillText(hourlyStats.totalContas.toLocaleString('pt-BR'), col3X, curY);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText(`${hourlyStats.avgConversao.toFixed(1).replace('.', ',')}%`, col4X, curY);
+    }
+
     // --- CHART BOX (LAST 7 DAYS) ---
-    const chartBoxY = topY + topBoxH + 14;
-    const chartBoxH = height - chartBoxY - 24;
     roundRect(padX, chartBoxY, totalInnerW, chartBoxH, 12);
     ctx.fillStyle = '#141414';
     ctx.fill();
@@ -1142,7 +1262,11 @@ export const SiscomDashboardView: React.FC = () => {
 
     const topY = 74;
     const row2Top = topY + row1H + gap;
-    const chartBoxY = row2Top + row2H + gap;
+    const hasHourly = showHourlySection && hourlyStats.hasData && displayedHourlyData.length > 0;
+    const hourlyRowH = 22;
+    const hourlyBoxH = hasHourly ? 44 + 20 + displayedHourlyData.length * hourlyRowH + 24 : 0;
+    const hourlyBoxY = row2Top + row2H + gap;
+    const chartBoxY = hasHourly ? hourlyBoxY + hourlyBoxH + gap : row2Top + row2H + gap;
     const height = chartBoxY + chartBoxH + 18;
 
     const canvas = document.createElement('canvas');
@@ -1432,6 +1556,92 @@ export const SiscomDashboardView: React.FC = () => {
       row2Top + 84
     );
     drawDeltaPill(col3_3X, row2Top + 112, deltas.conversaoPct);
+
+    // --- HOURLY BREAKDOWN BOX (IF ACTIVE) ---
+    if (hasHourly) {
+      roundRect(padX, hourlyBoxY, innerW, hourlyBoxH, 14);
+      ctx.fillStyle = '#101010';
+      ctx.fill();
+      ctx.strokeStyle = '#222222';
+      ctx.stroke();
+
+      ctx.fillStyle = '#D4D4D4';
+      ctx.font = '700 11px Inter, system-ui, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('OPERAÇÃO HORA A HORA', padX + 16, hourlyBoxY + 23);
+
+      ctx.strokeStyle = '#1E1E1E';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(padX + 16, hourlyBoxY + 33);
+      ctx.lineTo(padX + innerW - 16, hourlyBoxY + 33);
+      ctx.stroke();
+
+      const col1X = padX + 16;
+      const col2X = padX + innerW * 0.44;
+      const col3X = padX + innerW * 0.72;
+      const col4X = padX + innerW - 16;
+      let curY = hourlyBoxY + 48;
+
+      ctx.font = '700 10px Inter, system-ui, sans-serif';
+      ctx.fillStyle = '#737373';
+      ctx.textAlign = 'left';
+      ctx.fillText('FAIXA HORÁRIA', col1X, curY);
+      ctx.textAlign = 'right';
+      ctx.fillText('LEADS', col2X, curY);
+      ctx.fillText('CONTAS', col3X, curY);
+      ctx.fillText('CONV.', col4X, curY);
+
+      ctx.font = '600 11px Inter, system-ui, sans-serif';
+      displayedHourlyData.forEach(item => {
+        curY += hourlyRowH;
+
+        ctx.strokeStyle = '#1A1A1A';
+        ctx.beginPath();
+        ctx.moveTo(col1X, curY - 14);
+        ctx.lineTo(col4X, curY - 14);
+        ctx.stroke();
+
+        ctx.fillStyle = '#E5E5E5';
+        ctx.textAlign = 'left';
+        ctx.fillText(item.hourLabel, col1X, curY);
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'right';
+        ctx.fillText(item.leadsIndicados.toLocaleString('pt-BR'), col2X, curY);
+
+        ctx.fillStyle = item.contasAbertas > 0 ? '#26D09B' : '#737373';
+        ctx.fillText(item.contasAbertas.toLocaleString('pt-BR'), col3X, curY);
+
+        const conv =
+          item.leadsIndicados > 0 ? (item.contasAbertas / item.leadsIndicados) * 100 : 0;
+        ctx.fillStyle = conv > 0 ? '#26D09B' : '#737373';
+        ctx.fillText(`${conv.toFixed(1).replace('.', ',')}%`, col4X, curY);
+      });
+
+      curY += 22;
+      ctx.strokeStyle = '#262626';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(col1X, curY - 14);
+      ctx.lineTo(col4X, curY - 14);
+      ctx.stroke();
+
+      ctx.font = '800 10px Inter, system-ui, sans-serif';
+      ctx.fillStyle = '#A3A3A3';
+      ctx.textAlign = 'left';
+      ctx.fillText('TOTAIS', col1X, curY);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.textAlign = 'right';
+      ctx.fillText(hourlyStats.totalLeads.toLocaleString('pt-BR'), col2X, curY);
+
+      ctx.fillStyle = '#26D09B';
+      ctx.fillText(hourlyStats.totalContas.toLocaleString('pt-BR'), col3X, curY);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText(`${hourlyStats.avgConversao.toFixed(1).replace('.', ',')}%`, col4X, curY);
+    }
 
     // --- ROW 3: CARD 4 (CHART BOX, LAST 7 DAYS) ---
     roundRect(padX, chartBoxY, innerW, chartBoxH, 14);
@@ -1979,14 +2189,15 @@ export const SiscomDashboardView: React.FC = () => {
 
                 {hourlyItems.length > 0 ? (
                   <div className="space-y-2">
-                    <div className="grid grid-cols-12 gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">
+                    <div className="grid grid-cols-12 gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">
                       <div className="col-span-4">Horário</div>
                       <div className="col-span-3 text-center">Leads</div>
-                      <div className="col-span-3 text-center">Contas</div>
+                      <div className="col-span-2 text-center">Contas</div>
                       <div className="col-span-2 text-right">Conv.</div>
+                      <div className="col-span-1"></div>
                     </div>
 
-                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                    <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
                       {hourlyItems.map((item, idx) => {
                         const itemConv =
                           item.leadsIndicados > 0
@@ -1995,7 +2206,7 @@ export const SiscomDashboardView: React.FC = () => {
                         return (
                           <div
                             key={idx}
-                            className="grid grid-cols-12 gap-2 items-center bg-[#0D0D0D] p-2 rounded-xl border border-[#222222]"
+                            className="grid grid-cols-12 gap-1.5 items-center bg-[#0D0D0D] p-1.5 rounded-xl border border-[#222222]"
                           >
                             <div className="col-span-4">
                               <input
@@ -2017,10 +2228,10 @@ export const SiscomDashboardView: React.FC = () => {
                                   handleUpdateHourlySlot(idx, 'leadsIndicados', e.target.value)
                                 }
                                 placeholder="0"
-                                className="w-full px-2 py-1 text-center bg-[#161616] border border-[#262626] rounded-lg text-xs font-bold text-white focus:outline-none focus:border-slate-500"
+                                className="w-full px-1.5 py-1 text-center bg-[#161616] border border-[#262626] rounded-lg text-xs font-bold text-white focus:outline-none focus:border-slate-500"
                               />
                             </div>
-                            <div className="col-span-3">
+                            <div className="col-span-2">
                               <input
                                 type="number"
                                 min="0"
@@ -2029,7 +2240,7 @@ export const SiscomDashboardView: React.FC = () => {
                                   handleUpdateHourlySlot(idx, 'contasAbertas', e.target.value)
                                 }
                                 placeholder="0"
-                                className="w-full px-2 py-1 text-center bg-[#161616] border border-[#262626] rounded-lg text-xs font-bold text-[#26D09B] focus:outline-none focus:border-[#26D09B]"
+                                className="w-full px-1.5 py-1 text-center bg-[#161616] border border-[#262626] rounded-lg text-xs font-bold text-[#26D09B] focus:outline-none focus:border-[#26D09B]"
                               />
                             </div>
                             <div className="col-span-2 text-right">
@@ -2041,46 +2252,131 @@ export const SiscomDashboardView: React.FC = () => {
                                 {itemConv > 0 ? `${itemConv.toFixed(0)}%` : '0%'}
                               </span>
                             </div>
+                            <div className="col-span-1 flex items-center justify-center">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveHourlySlot(idx)}
+                                className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-400/10 transition-colors cursor-pointer"
+                                title="Excluir este horário"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
                         );
                       })}
                     </div>
 
                     {/* Action buttons below slots */}
-                    <div className="pt-2 flex items-center justify-between gap-2 border-t border-[#222222]">
-                      <button
-                        type="button"
-                        onClick={handleAddHourlySlot}
-                        className="flex items-center gap-1 text-[11px] font-semibold text-slate-400 hover:text-white cursor-pointer transition-colors"
-                      >
-                        <Plus className="w-3.5 h-3.5 text-[#FACC15]" />
-                        Adicionar hora
-                      </button>
+                    <div className="pt-2 flex flex-col gap-2 border-t border-[#222222]">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={handleAddHourlySlot}
+                            className="flex items-center gap-1 text-[11px] font-semibold text-slate-300 hover:text-white cursor-pointer transition-colors"
+                          >
+                            <Plus className="w-3.5 h-3.5 text-[#FACC15]" />
+                            Mais 1 hora
+                          </button>
 
-                      <button
-                        type="button"
-                        onClick={handleSyncTotalsFromHourly}
-                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#26D09B]/10 hover:bg-[#26D09B]/20 text-[#26D09B] border border-[#26D09B]/30 text-[11px] font-bold transition-all cursor-pointer"
-                        title="Preencher os campos de Produção com a soma do detalhamento hora a hora"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        Copiar soma p/ totais
-                      </button>
+                          {!hourlyItems.some(
+                            h =>
+                              (h.hourLabel || '').includes('08h') ||
+                              (h.hourLabel || '').includes('8h')
+                          ) && (
+                            <button
+                              type="button"
+                              onClick={handlePrepend8amSlot}
+                              className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-[#FACC15]/10 text-amber-300 hover:bg-[#FACC15]/20 border border-[#FACC15]/30 cursor-pointer transition-colors"
+                              title="Inserir faixa das 08h às 09h no topo"
+                            >
+                              <Plus className="w-3 h-3" />
+                              Inserir 08h
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={handleClearHourlyData}
+                            className="flex items-center gap-1 text-[11px] font-semibold text-rose-400/80 hover:text-rose-400 cursor-pointer transition-colors"
+                            title="Remover todos os horários deste dia"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Limpar
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleSyncTotalsFromHourly}
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#26D09B]/10 hover:bg-[#26D09B]/20 text-[#26D09B] border border-[#26D09B]/30 text-[11px] font-bold transition-all cursor-pointer"
+                            title="Preencher os campos de Produção com a soma do detalhamento hora a hora"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            Copiar soma p/ totais
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[10px] text-slate-400">
+                        <button
+                          type="button"
+                          onClick={handleRealignSlotsFrom8am}
+                          className="text-slate-400 hover:text-slate-200 underline cursor-pointer"
+                          title="Reorganizar as faixas para começarem em 08h"
+                        >
+                          Reajustar nomes das faixas (início 08h)
+                        </button>
+                        <span>
+                          Soma:{' '}
+                          <strong className="text-white">
+                            {hourlyItems.reduce((acc, h) => acc + (h.leadsIndicados || 0), 0)} leads
+                          </strong>
+                          ,{' '}
+                          <strong className="text-[#26D09B]">
+                            {hourlyItems.reduce((acc, h) => acc + (h.contasAbertas || 0), 0)} contas
+                          </strong>
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ) : (
                   <div className="p-3 rounded-xl bg-[#0D0D0D] border border-dashed border-[#262626] text-center space-y-2">
                     <p className="text-[11px] text-slate-400">
-                      Informe o campo <strong>Horas rodadas</strong> para gerar as faixas horárias automaticamente.
+                      Nenhum horário cadastrado para este dia.
                     </p>
-                    <button
-                      type="button"
-                      onClick={handleAddHourlySlot}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#202020] hover:bg-[#2A2A2A] text-slate-200 hover:text-white text-xs font-semibold transition-colors cursor-pointer"
-                    >
-                      <Plus className="w-3.5 h-3.5 text-[#FACC15]" />
-                      Adicionar faixa horária
-                    </button>
+                    <div className="flex items-center justify-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const count = numHoras > 0 ? Math.floor(numHoras) : 8;
+                          const slots: SiscomHourlyItem[] = [];
+                          for (let i = 0; i < count; i++) {
+                            slots.push({
+                              hourIndex: i,
+                              hourLabel: getDefaultHourLabel(i, 8),
+                              leadsIndicados: 0,
+                              contasAbertas: 0
+                            });
+                          }
+                          setHourlyItems(slots);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#202020] hover:bg-[#2A2A2A] text-amber-300 hover:text-amber-200 text-xs font-semibold transition-colors cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5 text-[#FACC15]" />
+                        Gerar faixas (a partir das 08h)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleAddHourlySlot}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#161616] hover:bg-[#202020] border border-[#2A2A2A] text-slate-300 hover:text-white text-xs font-semibold transition-colors cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Adicionar 1 faixa
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -2683,31 +2979,11 @@ export const SiscomDashboardView: React.FC = () => {
             {/* HOURLY BREAKDOWN VIEW (OPERAÇÃO HORA A HORA) */}
             {showHourlySection && (
               <div className="p-5 rounded-2xl bg-[#101010] border border-[#222222] space-y-4">
-                {/* Header with Title & Best Highlights */}
-                <div className="flex items-center justify-between gap-3 pb-3 border-b border-[#1E1E1E]">
-                  <div>
-                    <h3 className="text-xs font-extrabold text-slate-300 tracking-wider uppercase">
-                      Operação Hora a Hora
-                    </h3>
-                  </div>
-
-                  {hourlyStats.bestConvHour && (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#26D09B]/10 border border-[#26D09B]/30 text-[#26D09B] text-[11px] font-bold">
-                      <span className="text-slate-400 font-semibold">Melhor Conversão:</span>
-                      <span className="text-white">{hourlyStats.bestConvHour.hourLabel}</span>
-                      <span className="text-[#26D09B]">
-                        (
-                        {(
-                          (hourlyStats.bestConvHour.contasAbertas /
-                            hourlyStats.bestConvHour.leadsIndicados) *
-                          100
-                        )
-                          .toFixed(1)
-                          .replace('.', ',')}
-                        %)
-                      </span>
-                    </div>
-                  )}
+                {/* Header with Title */}
+                <div className="pb-3 border-b border-[#1E1E1E]">
+                  <h3 className="text-xs font-extrabold text-slate-300 tracking-wider uppercase">
+                    Operação Hora a Hora
+                  </h3>
                 </div>
 
                 {/* Minimalist Hourly Table */}

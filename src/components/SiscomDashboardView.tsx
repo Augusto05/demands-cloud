@@ -143,8 +143,8 @@ export const SiscomDashboardView: React.FC = () => {
     };
   }, []);
 
-  // Default hour label generator (e.g. 09h - 10h, 10h - 11h)
-  const getDefaultHourLabel = (index: number, startHour = 9): string => {
+  // Default hour label generator (e.g. 08h - 09h, 09h - 10h)
+  const getDefaultHourLabel = (index: number, startHour = 8): string => {
     const start = (startHour + index) % 24;
     const end = (start + 1) % 24;
     const sStr = String(start).padStart(2, '0');
@@ -2005,7 +2005,7 @@ export const SiscomDashboardView: React.FC = () => {
                                   handleUpdateHourlySlot(idx, 'hourLabel', e.target.value)
                                 }
                                 className="w-full bg-transparent text-xs font-bold text-slate-200 focus:outline-none focus:text-white"
-                                placeholder="09h - 10h"
+                                placeholder="08h - 09h"
                               />
                             </div>
                             <div className="col-span-3">

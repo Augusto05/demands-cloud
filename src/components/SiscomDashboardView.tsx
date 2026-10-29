@@ -1055,7 +1055,8 @@ export const SiscomDashboardView: React.FC = () => {
       displayedHourlyData.forEach(item => {
         curY += hourlyRowH;
 
-        ctx.strokeStyle = '#1A1A1A';
+        ctx.strokeStyle = '#242424';
+        ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(col1X, curY - 16);
         ctx.lineTo(col5X, curY - 16);
@@ -1067,23 +1068,10 @@ export const SiscomDashboardView: React.FC = () => {
         ctx.textAlign = 'left';
         ctx.fillText(formatHourDisplay(item.hourLabel), col1X, curY);
 
-        // Leads Indicados + Yellow Progress Bar Underneath
+        // Leads Indicados
         ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'right';
-        ctx.fillText(item.leadsIndicados.toLocaleString('pt-BR'), col2X, curY - 2);
-
-        const barW = 54;
-        const barH = 3;
-        const barX = col2X - barW;
-        const barY = curY + 4;
-        roundRect(barX, barY, barW, barH, 2);
-        ctx.fillStyle = '#222222';
-        ctx.fill();
-        const maxL = hourlyStats.maxHourlyLeads || 1;
-        const fillW = Math.max(3, Math.min(barW, Math.round((item.leadsIndicados / maxL) * barW)));
-        roundRect(barX, barY, fillW, barH, 2);
-        ctx.fillStyle = '#FACC15';
-        ctx.fill();
+        ctx.fillText(item.leadsIndicados.toLocaleString('pt-BR'), col2X, curY);
 
         // Contas Abertas
         ctx.font = '800 13px Inter, system-ui, sans-serif';
@@ -1675,7 +1663,8 @@ export const SiscomDashboardView: React.FC = () => {
       displayedHourlyData.forEach(item => {
         curY += hourlyRowH;
 
-        ctx.strokeStyle = '#1A1A1A';
+        ctx.strokeStyle = '#242424';
+        ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(col1X, curY - 16);
         ctx.lineTo(col5X, curY - 16);
@@ -1687,23 +1676,10 @@ export const SiscomDashboardView: React.FC = () => {
         ctx.textAlign = 'left';
         ctx.fillText(formatHourDisplay(item.hourLabel), col1X, curY);
 
-        // Leads + mini yellow progress bar
+        // Leads
         ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'right';
-        ctx.fillText(item.leadsIndicados.toLocaleString('pt-BR'), col2X, curY - 2);
-
-        const barW = 38;
-        const barH = 3;
-        const barX = col2X - barW;
-        const barY = curY + 4;
-        roundRect(barX, barY, barW, barH, 2);
-        ctx.fillStyle = '#202020';
-        ctx.fill();
-        const maxL = hourlyStats.maxHourlyLeads || 1;
-        const fillW = Math.max(3, Math.min(barW, Math.round((item.leadsIndicados / maxL) * barW)));
-        roundRect(barX, barY, fillW, barH, 2);
-        ctx.fillStyle = '#FACC15';
-        ctx.fill();
+        ctx.fillText(item.leadsIndicados.toLocaleString('pt-BR'), col2X, curY);
 
         // Contas
         ctx.font = '800 13px Inter, system-ui, sans-serif';
@@ -3132,18 +3108,18 @@ export const SiscomDashboardView: React.FC = () => {
 
                 {/* Minimalist Hourly Table */}
                 {hourlyStats.hasData ? (
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto rounded-xl border border-[#222222]">
                     <table className="w-full text-left text-xs border-collapse">
                       <thead>
-                        <tr className="border-b border-[#222222] text-slate-400 text-[11px] font-bold uppercase tracking-wider">
-                          <th className="py-2.5 px-3">Horário</th>
-                          <th className="py-2.5 px-3 text-right">Leads Indicados</th>
-                          <th className="py-2.5 px-3 text-right">Contas Abertas</th>
-                          <th className="py-2.5 px-3 text-right">% Conversão</th>
-                          <th className="py-2.5 px-3 text-center">Destaque</th>
+                        <tr className="border-b border-[#282828] bg-[#141414] text-slate-400 text-[11px] font-bold uppercase tracking-wider">
+                          <th className="py-3 px-3.5">Horário</th>
+                          <th className="py-3 px-3.5 text-right">Leads Indicados</th>
+                          <th className="py-3 px-3.5 text-right">Contas Abertas</th>
+                          <th className="py-3 px-3.5 text-right">% Conversão</th>
+                          <th className="py-3 px-3.5 text-center">Destaque</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#1A1A1A]">
+                      <tbody className="divide-y divide-[#242424]">
                         {displayedHourlyData.map((item, idx) => {
                           const conv =
                             item.leadsIndicados > 0
@@ -3155,40 +3131,28 @@ export const SiscomDashboardView: React.FC = () => {
                           const isPeakLeads =
                             hourlyStats.peakLeadsHour?.hourIndex === item.hourIndex &&
                             item.leadsIndicados > 0;
-                          const widthPct = Math.min(
-                            100,
-                            Math.round(
-                              (item.leadsIndicados / (hourlyStats.maxHourlyLeads || 1)) * 100
-                            )
-                          );
 
                           return (
                             <tr
                               key={idx}
-                              className={`hover:bg-[#161616] transition-colors ${
-                                isBestConv ? 'bg-[#26D09B]/5' : ''
+                              className={`hover:bg-[#181818] transition-colors ${
+                                isBestConv
+                                  ? 'bg-[#26D09B]/5'
+                                  : idx % 2 === 1
+                                  ? 'bg-[#121212]/40'
+                                  : ''
                               }`}
                             >
-                              <td className="py-2.5 px-3 font-semibold text-slate-200">
+                              <td className="py-3 px-3.5 font-semibold text-slate-200">
                                 <span className="inline-flex items-center gap-2">
                                   <span className="w-1.5 h-1.5 rounded-full bg-[#525252]" />
                                   {formatHourDisplay(item.hourLabel)}
                                 </span>
                               </td>
-                              <td className="py-2.5 px-3 text-right">
-                                <div className="inline-flex flex-col items-end">
-                                  <span className="font-bold text-white tracking-tight">
-                                    {item.leadsIndicados.toLocaleString('pt-BR')}
-                                  </span>
-                                  <div className="w-16 h-1 rounded-full bg-[#202020] mt-1 overflow-hidden">
-                                    <div
-                                      className="h-full bg-[#FACC15] rounded-full"
-                                      style={{ width: `${widthPct}%` }}
-                                    />
-                                  </div>
-                                </div>
+                              <td className="py-3 px-3.5 text-right font-bold text-white tracking-tight">
+                                {item.leadsIndicados.toLocaleString('pt-BR')}
                               </td>
-                              <td className="py-2.5 px-3 text-right font-extrabold text-white tracking-tight">
+                              <td className="py-3 px-3.5 text-right font-extrabold text-white tracking-tight">
                                 <span
                                   className={
                                     item.contasAbertas > 0 ? 'text-[#26D09B]' : 'text-slate-500'
@@ -3197,7 +3161,7 @@ export const SiscomDashboardView: React.FC = () => {
                                   {item.contasAbertas.toLocaleString('pt-BR')}
                                 </span>
                               </td>
-                              <td className="py-2.5 px-3 text-right">
+                              <td className="py-3 px-3.5 text-right">
                                 <span
                                   className={`inline-block font-black px-2 py-0.5 rounded-md ${
                                     conv >= (hourlyStats.avgConversao || 10) && conv > 0
@@ -3210,7 +3174,7 @@ export const SiscomDashboardView: React.FC = () => {
                                   {conv.toFixed(1).replace('.', ',')}%
                                 </span>
                               </td>
-                              <td className="py-2.5 px-3 text-center">
+                              <td className="py-3 px-3.5 text-center">
                                 {isBestConv ? (
                                   <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-[#26D09B]/20 text-[#26D09B] text-[10px] font-black uppercase">
                                     Maior Conv.
@@ -3228,20 +3192,20 @@ export const SiscomDashboardView: React.FC = () => {
                         })}
                       </tbody>
                       <tfoot>
-                        <tr className="border-t-2 border-[#262626] bg-[#141414] font-black text-slate-200">
-                          <td className="py-3 px-3 uppercase text-[11px] tracking-wider text-slate-400">
+                        <tr className="border-t-2 border-[#2A2A2A] bg-[#141414] font-black text-slate-200">
+                          <td className="py-3 px-3.5 uppercase text-[11px] tracking-wider text-slate-400">
                             Totais
                           </td>
-                          <td className="py-3 px-3 text-right text-white font-bold">
+                          <td className="py-3 px-3.5 text-right text-white font-bold">
                             {hourlyStats.totalLeads.toLocaleString('pt-BR')}
                           </td>
-                          <td className="py-3 px-3 text-right text-[#26D09B] font-black">
+                          <td className="py-3 px-3.5 text-right text-[#26D09B] font-black">
                             {hourlyStats.totalContas.toLocaleString('pt-BR')}
                           </td>
-                          <td className="py-3 px-3 text-right text-white font-black">
+                          <td className="py-3 px-3.5 text-right text-white font-black">
                             {hourlyStats.avgConversao.toFixed(1).replace('.', ',')}%
                           </td>
-                          <td className="py-3 px-3 text-center text-[10px] text-slate-400 font-medium">
+                          <td className="py-3 px-3.5 text-center text-[10px] text-slate-400 font-medium">
                             {displayedHourlyData.length} faixas
                           </td>
                         </tr>

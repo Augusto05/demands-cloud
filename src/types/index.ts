@@ -244,6 +244,7 @@ export interface SiscomHourlyItem {
   hourLabel: string; // e.g. "09h - 10h"
   leadsIndicados: number;
   contasAbertas: number;
+  abandonos?: number;
 }
 
 export interface SiscomDailyRecord {

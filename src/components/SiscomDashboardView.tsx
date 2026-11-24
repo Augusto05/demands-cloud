@@ -191,7 +191,8 @@ export const SiscomDashboardView: React.FC = () => {
         hourIndex: prev.length,
         hourLabel: getDefaultHourLabel(prev.length),
         leadsIndicados: 0,
-        contasAbertas: 0
+        contasAbertas: 0,
+        abandonos: 0
       }
     ]);
   };
@@ -206,7 +207,7 @@ export const SiscomDashboardView: React.FC = () => {
 
   const handleUpdateHourlySlot = (
     index: number,
-    field: 'hourLabel' | 'leadsIndicados' | 'contasAbertas',
+    field: 'hourLabel' | 'leadsIndicados' | 'contasAbertas' | 'abandonos',
     val: any
   ) => {
     setHourlyItems(prev =>
@@ -233,7 +234,8 @@ export const SiscomDashboardView: React.FC = () => {
         hourIndex: 0,
         hourLabel: '8h',
         leadsIndicados: 0,
-        contasAbertas: 0
+        contasAbertas: 0,
+        abandonos: 0
       },
       ...prev.map((item, idx) => ({ ...item, hourIndex: idx + 1 }))
     ]);
@@ -274,7 +276,7 @@ export const SiscomDashboardView: React.FC = () => {
       setAtritados(existing.atritados > 0 ? String(existing.atritados) : '');
 
       if (existing.hourlyData && Array.isArray(existing.hourlyData) && existing.hourlyData.length > 0) {
-        setHourlyItems(existing.hourlyData);
+        setHourlyItems(existing.hourlyData.map(h => ({ ...h, abandonos: h.abandonos || 0 })));
       } else if (existing.horasRodadas > 0) {
         const count = Math.floor(existing.horasRodadas);
         const slots: SiscomHourlyItem[] = [];
@@ -283,7 +285,8 @@ export const SiscomDashboardView: React.FC = () => {
             hourIndex: i,
             hourLabel: getDefaultHourLabel(i),
             leadsIndicados: 0,
-            contasAbertas: 0
+            contasAbertas: 0,
+            abandonos: 0
           });
         }
         setHourlyItems(slots);
@@ -620,6 +623,7 @@ export const SiscomDashboardView: React.FC = () => {
       const singleRec = effectiveRecordsMap[activeRange.start];
       return (singleRec?.hourlyData || []).map(h => ({
         ...h,
+        abandonos: h.abandonos || 0,
         hourLabel: formatHourDisplay(h.hourLabel)
       }));
     }
@@ -627,7 +631,7 @@ export const SiscomDashboardView: React.FC = () => {
     // Multi-day filter: aggregate by hour slot across matching records in period
     const aggregationMap: Record<
       string,
-      { hourLabel: string; leadsIndicados: number; contasAbertas: number; order: number }
+      { hourLabel: string; leadsIndicados: number; contasAbertas: number; abandonos: number; order: number }
     > = {};
     const matchingRecords = Object.values(effectiveRecordsMap).filter(
       r => r.date >= activeRange.start && r.date <= activeRange.end && !isWeekend(r.date)
@@ -644,11 +648,13 @@ export const SiscomDashboardView: React.FC = () => {
               hourLabel: key,
               leadsIndicados: 0,
               contasAbertas: 0,
+              abandonos: 0,
               order: item.hourIndex ?? 0
             };
           }
           aggregationMap[key].leadsIndicados += item.leadsIndicados || 0;
           aggregationMap[key].contasAbertas += item.contasAbertas || 0;
+          aggregationMap[key].abandonos += item.abandonos || 0;
         });
       }
     });
@@ -659,7 +665,8 @@ export const SiscomDashboardView: React.FC = () => {
         hourIndex: idx,
         hourLabel: item.hourLabel,
         leadsIndicados: item.leadsIndicados,
-        contasAbertas: item.contasAbertas
+        contasAbertas: item.contasAbertas,
+        abandonos: item.abandonos
       }));
   }, [activeRange, effectiveRecordsMap]);
 
@@ -670,7 +677,9 @@ export const SiscomDashboardView: React.FC = () => {
         hasData: false,
         totalLeads: 0,
         totalContas: 0,
+        totalAbandonos: 0,
         avgConversao: 0,
+        avgAbandonos: 0,
         bestConvHour: null as SiscomHourlyItem | null,
         bestContasHour: null as SiscomHourlyItem | null,
         peakLeadsHour: null as SiscomHourlyItem | null,
@@ -680,7 +689,9 @@ export const SiscomDashboardView: React.FC = () => {
 
     const totalLeads = displayedHourlyData.reduce((acc, h) => acc + (h.leadsIndicados || 0), 0);
     const totalContas = displayedHourlyData.reduce((acc, h) => acc + (h.contasAbertas || 0), 0);
+    const totalAbandonos = displayedHourlyData.reduce((acc, h) => acc + (h.abandonos || 0), 0);
     const avgConversao = totalLeads > 0 ? (totalContas / totalLeads) * 100 : 0;
+    const avgAbandonos = totalLeads > 0 ? (totalAbandonos / totalLeads) * 100 : 0;
     const maxHourlyLeads = Math.max(1, ...displayedHourlyData.map(h => h.leadsIndicados || 0));
 
     let bestConvHour: SiscomHourlyItem | null = null;
@@ -707,10 +718,12 @@ export const SiscomDashboardView: React.FC = () => {
     });
 
     return {
-      hasData: totalLeads > 0 || totalContas > 0,
+      hasData: totalLeads > 0 || totalContas > 0 || totalAbandonos > 0,
       totalLeads,
       totalContas,
+      totalAbandonos,
       avgConversao,
+      avgAbandonos,
       bestConvHour,
       bestContasHour,
       peakLeadsHour,
@@ -1036,10 +1049,11 @@ export const SiscomDashboardView: React.FC = () => {
       ctx.stroke();
 
       const col1X = padX + 22;
-      const col2Center = padX + 236;
-      const col3Center = padX + 426;
-      const col4Center = padX + 616;
-      const col5Center = padX + 794;
+      const col2Center = padX + 166;
+      const col3Center = padX + 316;
+      const col4Center = padX + 466;
+      const col5Center = padX + 616;
+      const col6Center = padX + 766;
       const rightEdge = padX + totalInnerW - 22;
 
       const headerTop = hourlyBoxY + 38;
@@ -1055,7 +1069,8 @@ export const SiscomDashboardView: React.FC = () => {
       ctx.fillText('LEADS INDICADOS', col2Center, headerMid);
       ctx.fillText('CONTAS ABERTAS', col3Center, headerMid);
       ctx.fillText('% CONVERSÃO', col4Center, headerMid);
-      ctx.fillText('DESTAQUE', col5Center, headerMid);
+      ctx.fillText('ABANDONOS', col5Center, headerMid);
+      ctx.fillText('% ABANDONOS', col6Center, headerMid);
 
       let curRowTop = headerTop + headerH;
       ctx.strokeStyle = '#282828';
@@ -1104,39 +1119,31 @@ export const SiscomDashboardView: React.FC = () => {
         ctx.textAlign = 'center';
         ctx.fillText(convText, col4Center, rowMid);
 
-        // Destaque Badge
-        const isBestConv =
-          hourlyStats.bestConvHour?.hourIndex === item.hourIndex && item.contasAbertas > 0;
-        const isPeakLeads =
-          hourlyStats.peakLeadsHour?.hourIndex === item.hourIndex && item.leadsIndicados > 0;
-        if (isBestConv) {
-          const bText = 'Maior Conv.';
-          ctx.font = '800 10px Inter, system-ui, sans-serif';
-          const bw = ctx.measureText(bText).width + 12;
-          const badgeH = 18;
-          roundRect(col5Center - bw / 2, rowMid - badgeH / 2, bw, badgeH, 4);
-          ctx.fillStyle = 'rgba(38, 208, 155, 0.20)';
+        // Abandonos
+        const abCount = item.abandonos || 0;
+        ctx.font = '800 13px Inter, system-ui, sans-serif';
+        ctx.fillStyle = abCount > 0 ? '#FB7185' : '#737373';
+        ctx.textAlign = 'center';
+        ctx.fillText(abCount.toLocaleString('pt-BR'), col5Center, rowMid);
+
+        // % Abandonos Pill
+        const aband =
+          item.leadsIndicados > 0 ? ((item.abandonos || 0) / item.leadsIndicados) * 100 : 0;
+        const abandText = `${aband.toFixed(1).replace('.', ',')}%`;
+        ctx.font = '800 12px Inter, system-ui, sans-serif';
+        const atw = ctx.measureText(abandText).width;
+        const apillW = atw + 14;
+        const apillH = 20;
+        if (aband > 0) {
+          roundRect(col6Center - apillW / 2, rowMid - apillH / 2, apillW, apillH, 5);
+          ctx.fillStyle = 'rgba(244, 63, 94, 0.15)';
           ctx.fill();
-          ctx.fillStyle = '#26D09B';
-          ctx.textAlign = 'center';
-          ctx.fillText(bText, col5Center, rowMid);
-        } else if (isPeakLeads) {
-          const bText = 'Pico Leads';
-          ctx.font = '800 10px Inter, system-ui, sans-serif';
-          const bw = ctx.measureText(bText).width + 12;
-          const badgeH = 18;
-          roundRect(col5Center - bw / 2, rowMid - badgeH / 2, bw, badgeH, 4);
-          ctx.fillStyle = 'rgba(250, 204, 21, 0.20)';
-          ctx.fill();
-          ctx.fillStyle = '#FACC15';
-          ctx.textAlign = 'center';
-          ctx.fillText(bText, col5Center, rowMid);
+          ctx.fillStyle = '#FB7185';
         } else {
-          ctx.font = '600 11px Inter, system-ui, sans-serif';
-          ctx.fillStyle = '#525252';
-          ctx.textAlign = 'center';
-          ctx.fillText('—', col5Center, rowMid);
+          ctx.fillStyle = '#737373';
         }
+        ctx.textAlign = 'center';
+        ctx.fillText(abandText, col6Center, rowMid);
 
         curRowTop += hourlyRowH;
         ctx.strokeStyle = '#242424';
@@ -1174,9 +1181,11 @@ export const SiscomDashboardView: React.FC = () => {
       ctx.fillStyle = '#FFFFFF';
       ctx.fillText(`${hourlyStats.avgConversao.toFixed(1).replace('.', ',')}%`, col4Center, totaisMid);
 
-      ctx.font = '600 11px Inter, system-ui, sans-serif';
-      ctx.fillStyle = '#737373';
-      ctx.fillText(`${displayedHourlyData.length} faixas`, col5Center, totaisMid);
+      ctx.fillStyle = '#FB7185';
+      ctx.fillText(hourlyStats.totalAbandonos.toLocaleString('pt-BR'), col5Center, totaisMid);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText(`${hourlyStats.avgAbandonos.toFixed(1).replace('.', ',')}%`, col6Center, totaisMid);
 
       ctx.textBaseline = 'alphabetic';
       ctx.textAlign = 'left';
@@ -1670,12 +1679,13 @@ export const SiscomDashboardView: React.FC = () => {
       ctx.lineTo(padX + innerW - 18, hourlyBoxY + 36);
       ctx.stroke();
 
-      // 5 Columns: Horário, Leads, Contas, % Conv, Destaque
+      // 6 Columns: Horário, Leads, Contas, % Conv, Abandonos, % Aband
       const col1X = padX + 18;
-      const col2Center = padX + 146;
-      const col3Center = padX + 256;
-      const col4Center = padX + 366;
-      const col5Center = padX + 476;
+      const col2Center = padX + 108;
+      const col3Center = padX + 200;
+      const col4Center = padX + 292;
+      const col5Center = padX + 384;
+      const col6Center = padX + 476;
       const rightEdge = padX + innerW - 18;
 
       const headerTop = hourlyBoxY + 36;
@@ -1691,7 +1701,8 @@ export const SiscomDashboardView: React.FC = () => {
       ctx.fillText('LEADS', col2Center, headerMid);
       ctx.fillText('CONTAS', col3Center, headerMid);
       ctx.fillText('% CONV.', col4Center, headerMid);
-      ctx.fillText('DESTAQUE', col5Center, headerMid);
+      ctx.fillText('ABAND.', col5Center, headerMid);
+      ctx.fillText('% ABAND.', col6Center, headerMid);
 
       let curRowTop = headerTop + headerH;
       ctx.strokeStyle = '#282828';
@@ -1740,39 +1751,31 @@ export const SiscomDashboardView: React.FC = () => {
         ctx.textAlign = 'center';
         ctx.fillText(convText, col4Center, rowMid);
 
-        // Destaque Badge
-        const isBestConv =
-          hourlyStats.bestConvHour?.hourIndex === item.hourIndex && item.contasAbertas > 0;
-        const isPeakLeads =
-          hourlyStats.peakLeadsHour?.hourIndex === item.hourIndex && item.leadsIndicados > 0;
-        if (isBestConv) {
-          const bText = 'Maior Conv.';
-          ctx.font = '800 10px Inter, system-ui, sans-serif';
-          const bw = ctx.measureText(bText).width + 10;
-          const badgeH = 18;
-          roundRect(col5Center - bw / 2, rowMid - badgeH / 2, bw, badgeH, 4);
-          ctx.fillStyle = 'rgba(38, 208, 155, 0.20)';
+        // Abandonos
+        const abCount = item.abandonos || 0;
+        ctx.font = '800 13px Inter, system-ui, sans-serif';
+        ctx.fillStyle = abCount > 0 ? '#FB7185' : '#737373';
+        ctx.textAlign = 'center';
+        ctx.fillText(abCount.toLocaleString('pt-BR'), col5Center, rowMid);
+
+        // % Abandonos Pill
+        const aband =
+          item.leadsIndicados > 0 ? ((item.abandonos || 0) / item.leadsIndicados) * 100 : 0;
+        const abandText = `${aband.toFixed(1).replace('.', ',')}%`;
+        ctx.font = '800 12px Inter, system-ui, sans-serif';
+        const atw = ctx.measureText(abandText).width;
+        const apillW = atw + 12;
+        const apillH = 20;
+        if (aband > 0) {
+          roundRect(col6Center - apillW / 2, rowMid - apillH / 2, apillW, apillH, 5);
+          ctx.fillStyle = 'rgba(244, 63, 94, 0.15)';
           ctx.fill();
-          ctx.fillStyle = '#26D09B';
-          ctx.textAlign = 'center';
-          ctx.fillText(bText, col5Center, rowMid);
-        } else if (isPeakLeads) {
-          const bText = 'Pico Leads';
-          ctx.font = '800 10px Inter, system-ui, sans-serif';
-          const bw = ctx.measureText(bText).width + 10;
-          const badgeH = 18;
-          roundRect(col5Center - bw / 2, rowMid - badgeH / 2, bw, badgeH, 4);
-          ctx.fillStyle = 'rgba(250, 204, 21, 0.20)';
-          ctx.fill();
-          ctx.fillStyle = '#FACC15';
-          ctx.textAlign = 'center';
-          ctx.fillText(bText, col5Center, rowMid);
+          ctx.fillStyle = '#FB7185';
         } else {
-          ctx.font = '600 11px Inter, system-ui, sans-serif';
-          ctx.fillStyle = '#525252';
-          ctx.textAlign = 'center';
-          ctx.fillText('—', col5Center, rowMid);
+          ctx.fillStyle = '#737373';
         }
+        ctx.textAlign = 'center';
+        ctx.fillText(abandText, col6Center, rowMid);
 
         curRowTop += hourlyRowH;
         ctx.strokeStyle = '#242424';
@@ -1810,9 +1813,11 @@ export const SiscomDashboardView: React.FC = () => {
       ctx.fillStyle = '#FFFFFF';
       ctx.fillText(`${hourlyStats.avgConversao.toFixed(1).replace('.', ',')}%`, col4Center, totaisMid);
 
-      ctx.font = '600 11px Inter, system-ui, sans-serif';
-      ctx.fillStyle = '#737373';
-      ctx.fillText(`${displayedHourlyData.length} faixas`, col5Center, totaisMid);
+      ctx.fillStyle = '#FB7185';
+      ctx.fillText(hourlyStats.totalAbandonos.toLocaleString('pt-BR'), col5Center, totaisMid);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText(`${hourlyStats.avgAbandonos.toFixed(1).replace('.', ',')}%`, col6Center, totaisMid);
 
       ctx.textBaseline = 'alphabetic';
       ctx.textAlign = 'left';
@@ -2366,10 +2371,11 @@ export const SiscomDashboardView: React.FC = () => {
                 {hourlyItems.length > 0 ? (
                   <div className="space-y-2">
                     <div className="grid grid-cols-12 gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">
-                      <div className="col-span-4">Horário</div>
-                      <div className="col-span-3 text-center">Leads</div>
+                      <div className="col-span-3">Horário</div>
+                      <div className="col-span-2 text-center">Leads</div>
                       <div className="col-span-2 text-center">Contas</div>
-                      <div className="col-span-2 text-right">Conv.</div>
+                      <div className="col-span-2 text-center">Aband.</div>
+                      <div className="col-span-2 text-right">Conv. / % Ab.</div>
                       <div className="col-span-1"></div>
                     </div>
 
@@ -2379,12 +2385,16 @@ export const SiscomDashboardView: React.FC = () => {
                           item.leadsIndicados > 0
                             ? (item.contasAbertas / item.leadsIndicados) * 100
                             : 0;
+                        const itemAband =
+                          item.leadsIndicados > 0
+                            ? ((item.abandonos || 0) / item.leadsIndicados) * 100
+                            : 0;
                         return (
                           <div
                             key={idx}
                             className="grid grid-cols-12 gap-1.5 items-center bg-[#0D0D0D] p-1.5 rounded-xl border border-[#222222]"
                           >
-                            <div className="col-span-4">
+                            <div className="col-span-3">
                               <input
                                 type="text"
                                 value={item.hourLabel}
@@ -2395,7 +2405,7 @@ export const SiscomDashboardView: React.FC = () => {
                                 placeholder="08h - 09h"
                               />
                             </div>
-                            <div className="col-span-3">
+                            <div className="col-span-2">
                               <input
                                 type="number"
                                 min="0"
@@ -2404,6 +2414,7 @@ export const SiscomDashboardView: React.FC = () => {
                                   handleUpdateHourlySlot(idx, 'leadsIndicados', e.target.value)
                                 }
                                 placeholder="0"
+                                title="Leads indicados"
                                 className="w-full px-1.5 py-1 text-center bg-[#161616] border border-[#262626] rounded-lg text-xs font-bold text-white focus:outline-none focus:border-slate-500"
                               />
                             </div>
@@ -2416,16 +2427,37 @@ export const SiscomDashboardView: React.FC = () => {
                                   handleUpdateHourlySlot(idx, 'contasAbertas', e.target.value)
                                 }
                                 placeholder="0"
+                                title="Contas abertas"
                                 className="w-full px-1.5 py-1 text-center bg-[#161616] border border-[#262626] rounded-lg text-xs font-bold text-[#26D09B] focus:outline-none focus:border-[#26D09B]"
                               />
                             </div>
-                            <div className="col-span-2 text-right">
+                            <div className="col-span-2">
+                              <input
+                                type="number"
+                                min="0"
+                                value={item.abandonos || ''}
+                                onChange={e =>
+                                  handleUpdateHourlySlot(idx, 'abandonos', e.target.value)
+                                }
+                                placeholder="0"
+                                title="Abandonos"
+                                className="w-full px-1.5 py-1 text-center bg-[#161616] border border-[#262626] rounded-lg text-xs font-bold text-rose-400 focus:outline-none focus:border-rose-400"
+                              />
+                            </div>
+                            <div className="col-span-2 text-right leading-tight">
                               <span
-                                className={`text-[10px] font-bold ${
+                                className={`text-[10px] font-bold block ${
                                   itemConv > 0 ? 'text-[#26D09B]' : 'text-slate-600'
                                 }`}
                               >
                                 {itemConv > 0 ? `${itemConv.toFixed(0)}%` : '0%'}
+                              </span>
+                              <span
+                                className={`text-[9px] font-semibold block ${
+                                  itemAband > 0 ? 'text-rose-400/80' : 'text-slate-600'
+                                }`}
+                              >
+                                {itemAband > 0 ? `${itemAband.toFixed(0)}% ab.` : '0% ab.'}
                               </span>
                             </div>
                             <div className="col-span-1 flex items-center justify-center">
@@ -2513,6 +2545,10 @@ export const SiscomDashboardView: React.FC = () => {
                           ,{' '}
                           <strong className="text-[#26D09B]">
                             {hourlyItems.reduce((acc, h) => acc + (h.contasAbertas || 0), 0)} contas
+                          </strong>
+                          ,{' '}
+                          <strong className="text-rose-400">
+                            {hourlyItems.reduce((acc, h) => acc + (h.abandonos || 0), 0)} aband.
                           </strong>
                         </span>
                       </div>
@@ -3168,11 +3204,12 @@ export const SiscomDashboardView: React.FC = () => {
                     <table className="w-full text-left text-xs border-collapse table-fixed">
                       <thead>
                         <tr className="border-b border-[#282828] bg-[#141414] text-slate-400 text-[11px] font-bold uppercase tracking-wider">
-                          <th className="py-3 px-3.5 w-[22%]">Horário</th>
-                          <th className="py-3 px-3.5 text-center w-[19%]">Leads Indicados</th>
-                          <th className="py-3 px-3.5 text-center w-[19%]">Contas Abertas</th>
-                          <th className="py-3 px-3.5 text-center w-[20%]">% Conversão</th>
-                          <th className="py-3 px-3.5 text-center w-[20%]">Destaque</th>
+                          <th className="py-3 px-3.5 w-[18%]">Horário</th>
+                          <th className="py-3 px-3.5 text-center w-[16%]">Leads Indicados</th>
+                          <th className="py-3 px-3.5 text-center w-[16%]">Contas Abertas</th>
+                          <th className="py-3 px-3.5 text-center w-[16%]">% Conversão</th>
+                          <th className="py-3 px-3.5 text-center w-[16%]">Abandonos</th>
+                          <th className="py-3 px-3.5 text-center w-[18%]">% Abandonos</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#242424]">
@@ -3181,22 +3218,16 @@ export const SiscomDashboardView: React.FC = () => {
                             item.leadsIndicados > 0
                               ? (item.contasAbertas / item.leadsIndicados) * 100
                               : 0;
-                          const isBestConv =
-                            hourlyStats.bestConvHour?.hourIndex === item.hourIndex &&
-                            item.contasAbertas > 0;
-                          const isPeakLeads =
-                            hourlyStats.peakLeadsHour?.hourIndex === item.hourIndex &&
-                            item.leadsIndicados > 0;
+                          const aband =
+                            item.leadsIndicados > 0
+                              ? ((item.abandonos || 0) / item.leadsIndicados) * 100
+                              : 0;
 
                           return (
                             <tr
                               key={idx}
                               className={`hover:bg-[#181818] transition-colors ${
-                                isBestConv
-                                  ? 'bg-[#26D09B]/5'
-                                  : idx % 2 === 1
-                                  ? 'bg-[#121212]/40'
-                                  : ''
+                                idx % 2 === 1 ? 'bg-[#121212]/40' : ''
                               }`}
                             >
                               <td className="py-3 px-3.5 font-semibold text-slate-200 align-middle">
@@ -3230,18 +3261,25 @@ export const SiscomDashboardView: React.FC = () => {
                                   {conv.toFixed(1).replace('.', ',')}%
                                 </span>
                               </td>
+                              <td className="py-3 px-3.5 text-center font-bold tracking-tight align-middle">
+                                <span
+                                  className={
+                                    (item.abandonos || 0) > 0 ? 'text-rose-400' : 'text-slate-500'
+                                  }
+                                >
+                                  {(item.abandonos || 0).toLocaleString('pt-BR')}
+                                </span>
+                              </td>
                               <td className="py-3 px-3.5 text-center align-middle">
-                                {isBestConv ? (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-[#26D09B]/20 text-[#26D09B] text-[10px] font-black uppercase">
-                                    Maior Conv.
-                                  </span>
-                                ) : isPeakLeads ? (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-[#FACC15]/20 text-[#FACC15] text-[10px] font-black uppercase">
-                                    Pico Leads
-                                  </span>
-                                ) : (
-                                  <span className="text-slate-600 font-mono text-[11px]">—</span>
-                                )}
+                                <span
+                                  className={`inline-block font-black px-2.5 py-1 rounded-md ${
+                                    aband > 0
+                                      ? 'bg-rose-500/10 text-rose-400'
+                                      : 'text-slate-500'
+                                  }`}
+                                >
+                                  {aband.toFixed(1).replace('.', ',')}%
+                                </span>
                               </td>
                             </tr>
                           );
@@ -3261,8 +3299,11 @@ export const SiscomDashboardView: React.FC = () => {
                           <td className="py-3 px-3.5 text-center text-white font-black align-middle">
                             {hourlyStats.avgConversao.toFixed(1).replace('.', ',')}%
                           </td>
-                          <td className="py-3 px-3.5 text-center text-[10px] text-slate-400 font-medium align-middle">
-                            {displayedHourlyData.length} faixas
+                          <td className="py-3 px-3.5 text-center text-rose-400 font-black align-middle">
+                            {hourlyStats.totalAbandonos.toLocaleString('pt-BR')}
+                          </td>
+                          <td className="py-3 px-3.5 text-center text-white font-black align-middle">
+                            {hourlyStats.avgAbandonos.toFixed(1).replace('.', ',')}%
                           </td>
                         </tr>
                       </tfoot>

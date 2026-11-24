@@ -242,7 +242,8 @@ export interface FlowCanvasStore {
 export interface SiscomHourlyItem {
   hourIndex: number; // 0, 1, 2, ...
   hourLabel: string; // e.g. "09h - 10h"
-  leadsIndicados: number;
+  transferencias?: number; // Substitui leadsIndicados na visão hora a hora
+  leadsIndicados?: number; // Compatibilidade com registros anteriores
   contasAbertas: number;
   abandonos?: number;
 }
